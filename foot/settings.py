@@ -4,16 +4,29 @@ Phase 1: auth + roles + clubs working; other apps registered as shells.
 """
 
 from pathlib import Path
+import os
+
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- SECURITY ---
-# NOTE: replace this before deploying anywhere public.
-SECRET_KEY = "django-insecure-CHANGE-ME-before-deployment"
+# Locally, falls back to the insecure dev key below. On Render, set SECRET_KEY
+# as an environment variable (the render.yaml blueprint generates one for you).
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-CHANGE-ME-before-deployment")
 
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
+# Render sets this automatically for every web service — no manual config needed.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
+CSRF_TRUSTED_ORIGINS = []
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 # --- APPLICATIONS ---
 INSTALLED_APPS = [
@@ -44,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -72,12 +86,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "foot.wsgi.application"
 
-# --- DATABASE (SQLite for local dev; swap to Postgres later) ---
+# --- DATABASE ---
+# Locally (no DATABASE_URL set): same SQLite file as before.
+# On Render: DATABASE_URL is provided automatically and Postgres is used instead.
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        ssl_require=not DEBUG,
+    )
 }
 
 # --- CUSTOM USER MODEL ---
@@ -105,6 +122,8 @@ USE_TZ = True
 # --- STATIC & MEDIA FILES ---
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

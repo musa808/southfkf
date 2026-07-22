@@ -1,0 +1,26 @@
+databases:
+  - name: fcms-db
+    databaseName: fcms
+    user: fcms
+    plan: free  # bump to "starter" or higher for production use
+
+services:
+  - type: web
+    name: fcms
+    env: python
+    plan: free  # bump for production — free instances sleep after inactivity
+    buildCommand: "bash build.sh"
+    startCommand: "gunicorn foot.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: WEB_CONCURRENCY
+        value: "4"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fcms-db
+          property: connectionString
