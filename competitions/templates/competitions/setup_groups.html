@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Set up Groups · {{ competition.name }}{% endblock %}
+{% block page_title %}Set up groups for {{ competition.name }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 480px;">
+    <p class="text-muted small">
+        This creates the groups (Group A, Group B, ...). Assigning teams into each
+        group is currently done from Django Admin — a drag-and-drop version is
+        planned for a later phase.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Number of groups</label>
+            <input type="number" name="num_groups" min="2" max="8" value="2" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Create groups</button>
+        <a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

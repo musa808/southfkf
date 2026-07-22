@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}{% if is_create %}New Season{% else %}Edit {{ season.name }}{% endif %}{% endblock %}
+{% block page_title %}{% if is_create %}Create a new season{% else %}Edit {{ season.name }}{% endif %}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 520px;">
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-2">
+            {% if is_create %}Create season{% else %}Save changes{% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}

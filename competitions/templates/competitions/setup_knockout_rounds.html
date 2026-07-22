@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Set up Knockout Rounds · {{ competition.name }}{% endblock %}
+{% block page_title %}Set up knockout rounds for {{ competition.name }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 480px;">
+    <p class="text-muted small">
+        Pick the rounds that apply to this competition based on how many teams
+        are entered. Filling in the actual matchups (the bracket pairings) is
+        coming in a later phase — this just builds the round structure.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+        {% for value, label, order in round_choices %}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="rounds" value="{{ value }}" id="round_{{ value }}">
+                <label class="form-check-label" for="round_{{ value }}">{{ label }}</label>
+            </div>
+        {% endfor %}
+        </div>
+        {% if competition.has_third_place_playoff %}
+            <p class="text-muted small mb-3">
+                Third Place Playoff will be added automatically since it's enabled in this competition's settings, if Semi Finals is selected.
+            </p>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Create rounds</button>
+        <a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

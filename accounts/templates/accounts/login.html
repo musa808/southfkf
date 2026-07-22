@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height: 90vh;">
+    <div class="card shadow-sm p-4" style="width: 380px;">
+        <div class="text-center mb-4">
+            <div style="font-size: 2rem;">⚽</div>
+            <h4 class="mb-0">FCMS</h4>
+            <small class="text-muted">Isiolo South Football Federation</small>
+        </div>
+        {% if form.errors %}
+            <div class="alert alert-danger small">Incorrect username or password.</div>
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-primary w-100 mt-2">Log in</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

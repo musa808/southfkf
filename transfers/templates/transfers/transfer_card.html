@@ -1,0 +1,160 @@
+{% load static %}
+<div class="card mb-3 transfer-card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-3">
+        <div class="player-avatar">
+          {{ transfer.player.full_name|slice:":1" }}
+        </div>
+        <div>
+          <h5 class="card-title mb-1">
+            <a href="{% url 'transfers:detail' transfer.pk %}">{{ transfer.player.full_name }}</a>
+          </h5>
+          <p class="card-subtitle text-muted mb-1 club-route">
+            <span class="{% if not transfer.from_club %}text-muted fst-italic{% endif %}">
+              {% if transfer.from_club %}{{ transfer.from_club.name }}{% else %}Free Agent{% endif %}
+            </span>
+            <span class="route-arrow">&rarr;</span>
+            <span class="fw-semibold">{{ transfer.to_club.name }}</span>
+          </p>
+          <span class="badge type-badge">{{ transfer.get_transfer_type_display }}</span>
+          {% if transfer.fee %}
+            <span class="badge fee-badge">KES {{ transfer.fee|floatformat:0 }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <span class="badge status-badge status-{{ transfer.status|lower }}">
+        {{ transfer.get_status_display }}
+      </span>
+    </div>
+
+    <!-- Status timeline -->
+    <ul class="list-inline mt-3 mb-0 transfer-timeline">
+      {% for step in transfer.timeline %}
+        <li class="list-inline-item timeline-step">
+          <span class="dot dot-{{ step.state }}"></span>
+          <span class="step-label">{{ step.label }}</span>
+          {% if step.timestamp %}
+            <small class="text-muted d-block step-time">{{ step.timestamp|date:"d M Y H:i" }}</small>
+          {% endif %}
+        </li>
+        {% if not forloop.last %}
+          <li class="list-inline-item timeline-connector"><span></span></li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+
+    <p class="text-muted small mt-3 mb-0 pt-2 border-top window-line">
+      <i class="bi bi-calendar-week"></i>
+      {{ transfer.window.name }} &middot; Requested {{ transfer.requested_at|date:"d M Y" }}
+    </p>
+  </div>
+</div>
+
+<style>
+  .transfer-card {
+    border: 1px solid #edf0f3;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(20, 30, 50, 0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .transfer-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(20, 30, 50, 0.1);
+  }
+
+  .player-avatar {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #198754, #14532d);
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-title a {
+    color: #14532d;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .card-title a:hover { text-decoration: underline; }
+
+  .club-route { font-size: 0.92rem; }
+  .route-arrow { margin: 0 4px; color: #adb5bd; }
+
+  .type-badge {
+    background: #eef1f4;
+    color: #495057;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .fee-badge {
+    background: #fff8e1;
+    color: #8a6d00;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-left: 6px;
+  }
+
+  .status-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+  }
+  .status-approved { background: #e6f6ec; color: #198754; }
+  .status-pending_club, .status-pending_subcounty { background: #fff4d6; color: #a17a00; }
+  .status-rejected, .status-cancelled { background: #fdeaea; color: #dc3545; }
+
+  /* Timeline */
+  .transfer-timeline {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding-left: 0;
+  }
+  .timeline-step {
+    text-align: center;
+    min-width: 90px;
+    font-size: 0.85rem;
+  }
+  .step-label { display: block; margin-top: 2px; }
+  .step-time { font-size: 0.72rem; margin-top: 2px; }
+
+  .timeline-connector {
+    flex: 1;
+    min-width: 20px;
+    align-self: center;
+    padding: 0 4px;
+  }
+  .timeline-connector span {
+    display: block;
+    height: 2px;
+    background: #dee2e6;
+    margin-top: -14px;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px #fff, 0 0 0 4px currentColor;
+  }
+  .dot-done { background: #198754; color: #198754; }
+  .dot-pending { background: #ffc107; color: #ffc107; }
+  .dot-upcoming { background: #dee2e6; color: #dee2e6; }
+  .dot-rejected { background: #dc3545; color: #dc3545; }
+
+  .window-line i { margin-right: 4px; }
+</style>

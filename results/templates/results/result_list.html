@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Results · {{ competition.name }}{% endblock %}
+{% block page_title %}Results — {{ competition.name }}{% endblock %}
+{% block content %}
+
+{% if not results %}
+<div class="card shadow-sm p-5 text-center text-muted">
+    <i class="bi bi-clipboard-data fs-1 mb-2"></i>
+    <p class="mb-0">No results recorded yet.</p>
+</div>
+{% else %}
+<div class="d-flex flex-column gap-3">
+{% for result in results %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                {{ result.fixture.match_date|date:"d M Y"|default:"TBD" }}
+                {% if result.fixture.is_knockout %}· {{ result.fixture.knockout_fixture.round.get_name_display }}
+                {% elif result.fixture.is_group_stage %}· {{ result.fixture.group.name }}
+                {% else %}· Matchday {{ result.fixture.round_number }}{% endif %}
+            </small>
+            {% if user.is_super_admin or user.is_subcounty_admin %}
+            <a href="{% url 'results:edit' result.fixture_id %}" class="btn btn-xs btn-link p-0 small">Edit</a>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center justify-content-between mt-2">
+            <span class="fw-semibold text-end" style="flex:1">{{ result.fixture.home_team.club.name }}</span>
+            <span class="mx-3 fs-4 fw-bold">{{ result.home_total }} – {{ result.away_total }}</span>
+            <span class="fw-semibold" style="flex:1">{{ result.fixture.away_team.club.name }}</span>
+        </div>
+        {% if result.went_to_extra_time %}
+        <div class="text-center text-muted small">
+            (90 min: {{ result.home_score }}–{{ result.away_score }})
+            {% if result.went_to_penalties %}
+            · Pen: {{ result.home_penalties }}–{{ result.away_penalties }}
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if result.goals.all %}
+        <div class="mt-2 small text-muted d-flex gap-4 flex-wrap">
+            <div>
+                {% for goal in result.goals.all %}
+                    {% if goal.scorer %}
+                        {% if goal.scorer.club == result.fixture.home_team.club and not goal.is_own_goal %}
+                            <span>{{ goal.scorer_display }} {{ goal.minute }}'{% if goal.is_penalty %} (P){% endif %}</span><br>
+                        {% elif goal.scorer.club == result.fixture.away_team.club and goal.is_own_goal %}
+                            <span>{{ goal.scorer_display }} {{ goal.minute }}' (OG)</span><br>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div>
+                {% for goal in result.goals.all %}
+                    {% if goal.scorer %}
+                        {% if goal.scorer.club == result.fixture.away_team.club and not goal.is_own_goal %}
+                            <span>{{ goal.scorer_display }} {{ goal.minute }}'{% if goal.is_penalty %} (P){% endif %}</span><br>
+                        {% elif goal.scorer.club == result.fixture.home_team.club and goal.is_own_goal %}
+                            <span>{{ goal.scorer_display }} {{ goal.minute }}' (OG)</span><br>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+<a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-link mt-3 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to {{ competition.name }}
+</a>
+{% endblock %}

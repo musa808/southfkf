@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Edit Fixture{% endblock %}
+{% block page_title %}{{ fixture.home_team.club.name }} vs {{ fixture.away_team.club.name }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 480px;">
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-2">Save</button>
+        <a href="{% url 'fixtures:list' fixture.competition_id %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

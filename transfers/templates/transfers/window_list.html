@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Transfer Windows{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Transfer Windows</h2>
+  <a href="{% url 'transfers:window_create' %}" class="btn btn-primary">New Window</a>
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th><th>Season</th><th>Type</th><th>Start</th><th>End</th><th>Status</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for window in windows %}
+      <tr>
+        <td>{{ window.name }}</td>
+        <td>{{ window.season.name }}</td>
+        <td>{{ window.get_window_type_display }}</td>
+        <td>{{ window.start_date }}</td>
+        <td>{{ window.end_date }}</td>
+        <td>
+          <span class="badge {% if window.is_open %}bg-success{% else %}bg-secondary{% endif %}">
+            {{ window.status_label }}
+          </span>
+        </td>
+        <td><a href="{% url 'transfers:window_edit' window.pk %}">Edit</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-muted">No transfer windows created yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

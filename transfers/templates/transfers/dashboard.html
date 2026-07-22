@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Transfers{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Transfer Dashboard</h2>
+  <div>
+    {% if request.user.is_club_admin %}
+      <a href="{% url 'transfers:initiate' %}" class="btn btn-primary">Initiate Transfer</a>
+    {% endif %}
+    {% if request.user.is_subcounty_admin or request.user.is_super_admin %}
+      <a href="{% url 'transfers:window_list' %}" class="btn btn-outline-secondary">Manage Windows</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if active_windows %}
+  <div class="alert alert-info">
+    Open window{{ active_windows|length|pluralize }}:
+    {% for w in active_windows %}{{ w.name }} (closes {{ w.end_date }}){% if not forloop.last %}, {% endif %}{% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-secondary">No transfer window is currently open.</div>
+{% endif %}
+
+{% if pending_your_action %}
+  <h4 class="mt-4">Awaiting Your Action</h4>
+  {% for transfer in pending_your_action %}
+    {% include "transfers/transfer_card.html" %}
+  {% endfor %}
+{% endif %}
+
+<h4 class="mt-4">All Transfers</h4>
+{% for transfer in transfers %}
+  {% include "transfers/transfer_card.html" %}
+{% empty %}
+  <p class="text-muted">No transfers to show.</p>
+{% endfor %}
+{% endblock %}

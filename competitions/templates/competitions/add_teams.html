@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Add Teams · {{ competition.name }}{% endblock %}
+{% block page_title %}Add teams to {{ competition.name }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 520px;">
+    {% if form.fields.clubs.queryset.exists %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            {% for checkbox in form.clubs %}
+                <div class="form-check">
+                    {{ checkbox.tag }}
+                    <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Add selected teams</button>
+        <a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+    {% else %}
+        <p class="text-muted mb-0">All active clubs are already entered into this competition.</p>
+        <a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-outline-secondary mt-3">Back</a>
+    {% endif %}
+</div>
+{% endblock %}

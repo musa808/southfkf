@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ player.full_name }}{% endblock %}
+{% block page_title %}{{ player.full_name }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+    {% if player.photo %}
+    <div class="col-md-3 text-center">
+        <img src="{{ player.photo.url }}" class="img-fluid rounded" style="max-height:180px;">
+    </div>
+    {% endif %}
+    <div class="col">
+        <div class="card shadow-sm p-4">
+            <dl class="row mb-0">
+                <dt class="col-sm-4 text-muted">Club</dt>
+                <dd class="col-sm-8"><a href="{% url 'clubs:detail' player.club_id %}">{{ player.club.name }}</a></dd>
+                <dt class="col-sm-4 text-muted">Position</dt>
+                <dd class="col-sm-8">{{ player.get_position_display|default:"—" }}</dd>
+                <dt class="col-sm-4 text-muted">Jersey #</dt>
+                <dd class="col-sm-8">{{ player.jersey_number|default:"—" }}</dd>
+                <dt class="col-sm-4 text-muted">Date of Birth</dt>
+                <dd class="col-sm-8">{{ player.date_of_birth|date:"d M Y"|default:"—" }}</dd>
+                <dt class="col-sm-4 text-muted">Status</dt>
+                <dd class="col-sm-8"><span class="status-pill status-{{ player.status }}">{{ player.get_status_display }}</span></dd>
+            </dl>
+        </div>
+    </div>
+</div>
+<a href="{% url 'players:list' player.club_id %}" class="btn btn-link mt-3 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to squad
+</a>
+{% endblock %}

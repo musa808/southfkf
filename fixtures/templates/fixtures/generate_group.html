@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Generate Fixtures · {{ group.name }}{% endblock %}
+{% block page_title %}Generate fixtures — {{ group.name }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 480px;">
+    <p class="text-muted small">
+        {{ team_count }} team{{ team_count|pluralize }} in {{ group.name }}. This creates a single
+        round-robin schedule for this group only.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-2">Generate fixtures</button>
+        <a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

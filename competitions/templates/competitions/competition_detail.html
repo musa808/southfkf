@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ competition.name }}{% endblock %}
+{% block page_title %}{{ competition.name }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <span class="badge text-bg-secondary">{{ competition.get_competition_type_display }}</span>
+        <span class="status-pill status-{% if competition.status == 'ONGOING' %}ACTIVE{% elif competition.status == 'COMPLETED' %}INACTIVE{% else %}PENDING{% endif %} ms-1">{{ competition.get_status_display }}</span>
+        <div class="text-muted small mt-1">Season: {{ competition.season.name }}</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'fixtures:list' competition.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-calendar-event me-1"></i>Fixtures
+        </a>
+        <a href="{% url 'results:list' competition.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-clipboard-check me-1"></i>Results
+        </a>
+        {% if competition.competition_type != 'KNOCKOUT' and competition.competition_type != 'FRIENDLY' %}
+        <a href="{% url 'standings:table' competition.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-list-ol me-1"></i>Standings
+        </a>
+        {% endif %}
+        <a href="{% url 'reports:index' competition.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Reports
+        </a>
+        {% if user.is_super_admin or user.is_subcounty_admin %}
+            <a href="{% url 'competitions:edit' competition.pk %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-pencil me-1"></i>Edit settings
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- TEAMS -->
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0">Entered teams ({{ teams|length }})</h6>
+    <div class="d-flex gap-2">
+        {% if competition.competition_type == 'LEAGUE' %}
+            {% if user.is_super_admin or user.is_subcounty_admin %}
+                <a href="{% url 'fixtures:generate_league' competition.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-shuffle me-1"></i>Generate fixtures
+                </a>
+            {% endif %}
+        {% endif %}
+        {% if user.is_super_admin or user.is_subcounty_admin %}
+            <a href="{% url 'competitions:add_teams' competition.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>Add teams
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if teams %}
+<div class="card shadow-sm mb-4">
+    <table class="table table-sm align-middle mb-0">
+        <tbody>
+        {% for team in teams %}
+            <tr>
+                <td>{{ team.club.name }}</td>
+                <td><span class="status-pill status-{% if team.status == 'ENTERED' %}ACTIVE{% else %}SUSPENDED{% endif %}">{{ team.get_status_display }}</span></td>
+                {% if user.is_super_admin or user.is_subcounty_admin %}
+                <td class="text-end">
+                    <form method="post" action="{% url 'competitions:remove_team' competition.pk team.pk %}" class="d-inline" onsubmit="return confirm('Remove {{ team.club.name }} from this competition?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card shadow-sm p-4 text-center text-muted mb-4">No teams entered yet.</div>
+{% endif %}
+
+<!-- GROUPS (Group + Knockout only) -->
+{% if competition.has_groups %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0">Groups</h6>
+    {% if user.is_super_admin or user.is_subcounty_admin %}
+        <a href="{% url 'competitions:setup_groups' competition.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-grid-3x3-gap me-1"></i>Set up groups
+        </a>
+    {% endif %}
+</div>
+
+{% if groups %}
+<div class="row g-3 mb-4">
+    {% for group in groups %}
+    <div class="col-md-4">
+        <div class="card shadow-sm p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold">{{ group.name }}</span>
+                {% if user.is_super_admin or user.is_subcounty_admin %}
+                    <a href="{% url 'fixtures:generate_group' group.pk %}" class="btn btn-xs btn-link p-0 small">Generate fixtures</a>
+                {% endif %}
+            </div>
+            {% if group.teams.all %}
+                <ul class="list-unstyled small mb-0">
+                {% for gt in group.teams.all %}
+                    <li>{{ gt.competition_team.club.name }}</li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <span class="text-muted small">No teams assigned yet — use Django Admin to assign teams to this group for now.</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card shadow-sm p-4 text-center text-muted mb-4">No groups set up yet.</div>
+{% endif %}
+{% endif %}
+
+<!-- KNOCKOUT BRACKET SKELETON -->
+{% if competition.has_knockout_bracket %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0">Knockout rounds</h6>
+    {% if user.is_super_admin or user.is_subcounty_admin %}
+        <a href="{% url 'competitions:setup_knockout_rounds' competition.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-diagram-3 me-1"></i>Set up rounds
+        </a>
+    {% endif %}
+</div>
+
+{% if knockout_rounds %}
+<div class="row g-3">
+    {% for round in knockout_rounds %}
+    <div class="col-md-4">
+        <div class="card shadow-sm p-3 h-100">
+            <div class="fw-semibold mb-2">{{ round.get_name_display }}</div>
+            {% if round.fixtures.all %}
+                <ul class="list-unstyled small mb-0">
+                {% for slot in round.fixtures.all %}
+                    <li class="mb-1 d-flex justify-content-between align-items-center">
+                        <span>{{ slot.team_a.club.name|default:"TBD" }} <span class="text-muted">vs</span> {{ slot.team_b.club.name|default:"TBD" }}</span>
+                        {% if user.is_super_admin or user.is_subcounty_admin %}
+                            <a href="{% url 'fixtures:assign_knockout_slot' slot.pk %}" class="btn btn-xs btn-link p-0 small ms-2">Assign</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <span class="text-muted small">No fixture slots yet — use Django Admin to add slots to this round (one per matchup, e.g. SF1, SF2).</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card shadow-sm p-4 text-center text-muted">No knockout rounds set up yet.</div>
+{% endif %}
+{% endif %}
+
+<a href="{% url 'competitions:list' %}" class="btn btn-link mt-4 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to competitions
+</a>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Assign Teams · {{ knockout_fixture }}{% endblock %}
+{% block page_title %}{{ knockout_fixture.round.get_name_display }} — Slot {{ knockout_fixture.slot_number }}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 480px;">
+    <p class="text-muted small">
+        Pick which two entered teams play this tie. Leave a team blank if it's
+        still waiting on a previous round's winner.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-2">Save</button>
+        <a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

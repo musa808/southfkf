@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ player.full_name }} — Transfer History{% endblock %}
+
+{% block content %}
+<h2>{{ player.full_name }} &middot; Transfer History</h2>
+<p class="text-muted">Current club: {{ player.club.name }}</p>
+
+{% for transfer in transfers %}
+  {% include "transfers/transfer_card.html" %}
+{% empty %}
+  <p class="text-muted">No transfer history for this player yet.</p>
+{% endfor %}
+{% endblock %}

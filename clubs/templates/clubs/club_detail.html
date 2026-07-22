@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ club.name }}{% endblock %}
+{% block page_title %}{{ club.name }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div class="d-flex gap-2">
+        <span class="status-pill status-{{ club.status }}">{{ club.get_status_display }}</span>
+        <a href="{% url 'players:list' club.pk %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-people me-1"></i>Squad
+        </a>
+    </div>
+    <a href="{% url 'clubs:edit' club.pk %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-3 text-center">
+        {% if club.logo %}
+            <img src="{{ club.logo.url }}" alt="{{ club.name }}" class="img-fluid rounded" style="max-height: 160px;">
+        {% else %}
+            <div class="d-flex align-items-center justify-content-center rounded bg-light" style="height: 140px;">
+                <span class="text-muted">No logo</span>
+            </div>
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <div class="card shadow-sm p-4">
+            <dl class="row mb-0">
+                <dt class="col-sm-4 text-muted">Ward</dt>
+                <dd class="col-sm-8">{{ club.ward }}</dd>
+
+                <dt class="col-sm-4 text-muted">Registration No.</dt>
+                <dd class="col-sm-8">{{ club.registration_number }}</dd>
+
+                <dt class="col-sm-4 text-muted">Home Ground</dt>
+                <dd class="col-sm-8">{{ club.home_ground|default:"—" }}</dd>
+
+                <dt class="col-sm-4 text-muted">Contact</dt>
+                <dd class="col-sm-8">
+                    {{ club.contact_name|default:"—" }}
+                    {% if club.contact_phone %}· {{ club.contact_phone }}{% endif %}
+                    {% if club.contact_email %}<br>{{ club.contact_email }}{% endif %}
+                </dd>
+
+                <dt class="col-sm-4 text-muted">Registered</dt>
+                <dd class="col-sm-8">{{ club.created_at|date:"d M Y" }}</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'clubs:list' %}" class="btn btn-link mt-3 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to clubs
+</a>
+{% endblock %}

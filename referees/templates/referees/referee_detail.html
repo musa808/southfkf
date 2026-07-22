@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ referee.full_name }}</h2>
+    <div>
+        <a href="{% url 'referees:referee-update' referee.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'referees:referee-list' %}" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        {% if referee.photo %}
+            <img src="{{ referee.photo.url }}" class="img-fluid rounded mb-3" alt="{{ referee.full_name }}">
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <table class="table table-borderless">
+            <tr><th>Grade</th><td>{{ referee.get_grade_display }}</td></tr>
+            <tr><th>License No.</th><td>{{ referee.license_number|default:"—" }}</td></tr>
+            <tr><th>Region</th><td>{{ referee.home_region|default:"—" }}</td></tr>
+            <tr><th>Nationality</th><td>{{ referee.nationality|default:"—" }}</td></tr>
+            <tr><th>Date of Birth</th><td>{{ referee.date_of_birth|default:"—" }}</td></tr>
+            <tr><th>Phone</th><td>{{ referee.phone_number|default:"—" }}</td></tr>
+            <tr><th>Email</th><td>{{ referee.email|default:"—" }}</td></tr>
+            <tr><th>Status</th><td>{% if referee.is_active %}Active{% else %}Inactive{% endif %}</td></tr>
+        </table>
+    </div>
+</div>
+
+<h4>Match Assignments</h4>
+<table class="table table-sm">
+    <thead>
+        <tr><th>Fixture</th><th>Role</th><th>Confirmed</th></tr>
+    </thead>
+    <tbody>
+        {% for a in assignments %}
+        <tr>
+            <td>{{ a.fixture }}</td>
+            <td>{{ a.get_role_display }}</td>
+            <td>{% if a.confirmed %}Yes{% else %}Pending{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-muted">No assignments yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

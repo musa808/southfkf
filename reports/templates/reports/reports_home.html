@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block content %}
+
+<p class="text-muted small mb-3">Select a competition to download its reports.</p>
+
+{% if competitions %}
+<div class="card shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Competition</th>
+                <th>Season</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for comp in competitions %}
+        <tr>
+            <td class="fw-semibold">{{ comp.name }}</td>
+            <td>{{ comp.season.name }}</td>
+            <td>{{ comp.get_competition_type_display }}</td>
+            <td>
+                <span class="status-pill status-{% if comp.status == 'ONGOING' %}ACTIVE{% elif comp.status == 'COMPLETED' %}INACTIVE{% else %}PENDING{% endif %}">
+                    {{ comp.get_status_display }}
+                </span>
+            </td>
+            <td class="text-end">
+                <a href="{% url 'reports:index' comp.pk %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>View Reports
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card shadow-sm p-5 text-center text-muted">
+    <i class="bi bi-file-earmark-pdf fs-1 mb-2"></i>
+    <p class="mb-0">No competitions yet. Create a competition first.</p>
+</div>
+{% endif %}
+{% endblock %}

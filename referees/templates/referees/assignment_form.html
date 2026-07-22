@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{% if object %}Edit Assignment{% else %}New Assignment{% endif %}</h2>
+<form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="row">
+        {% for field in form %}
+        <div class="col-md-6 mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+                <div class="text-danger small">{{ field.errors }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{% url 'referees:assignment-list' %}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+{% endblock %}

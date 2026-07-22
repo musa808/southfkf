@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Delete Assignment</h2>
+<p>Remove <strong>{{ object.referee.full_name }}</strong> ({{ object.get_role_display }}) from <strong>{{ object.fixture }}</strong>?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{% url 'referees:assignment-list' %}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Reports · {{ competition.name }}{% endblock %}
+{% block page_title %}Reports — {{ competition.name }}{% endblock %}
+{% block content %}
+
+<p class="text-muted small">{{ competition.season.name }} · {{ competition.get_competition_type_display }}</p>
+
+<div class="row g-3">
+
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-calendar-event fs-3 text-muted"></i>
+                <div>
+                    <div class="fw-semibold mb-1">Fixture List</div>
+                    <p class="text-muted small mb-2">Full schedule of all matches — dates, venues, rounds.</p>
+                    <a href="{% url 'reports:fixtures_pdf' competition.pk %}" class="btn btn-sm btn-primary" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if competition.competition_type != 'KNOCKOUT' and competition.competition_type != 'FRIENDLY' %}
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-list-ol fs-3 text-muted"></i>
+                <div>
+                    <div class="fw-semibold mb-1">Standings Table</div>
+                    <p class="text-muted small mb-2">
+                        Current league table{% if competition.has_groups %} split by group{% endif %},
+                        with P / W / D / L / GD / Pts.
+                    </p>
+                    <a href="{% url 'reports:standings_pdf' competition.pk %}" class="btn btn-sm btn-primary" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-award fs-3 text-muted"></i>
+                <div>
+                    <div class="fw-semibold mb-1">Top Scorers</div>
+                    <p class="text-muted small mb-2">Goals tally per player (own goals excluded).</p>
+                    <a href="{% url 'reports:top_scorers_pdf' competition.pk %}" class="btn btn-sm btn-primary" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm p-4 h-100">
+            <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-file-text fs-3 text-muted"></i>
+                <div>
+                    <div class="fw-semibold mb-1">Competition Summary</div>
+                    <p class="text-muted small mb-2">One-page overview — competition info, top 5 scorers, and standings snippet.</p>
+                    <a href="{% url 'reports:summary_pdf' competition.pk %}" class="btn btn-sm btn-primary" target="_blank">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-link mt-4 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to {{ competition.name }}
+</a>
+{% endblock %}

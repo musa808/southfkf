@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Transfer: {{ transfer.player.full_name }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'transfers:dashboard' %}">&larr; Back to dashboard</a>
+<h2 class="mt-2">{{ transfer.player.full_name }}</h2>
+<p class="text-muted">
+  {% if transfer.from_club %}{{ transfer.from_club.name }}{% else %}Free Agent{% endif %}
+  &rarr; {{ transfer.to_club.name }}
+  &middot; {{ transfer.get_transfer_type_display }}
+  {% if transfer.fee %} &middot; KES {{ transfer.fee }}{% endif %}
+</p>
+
+<h5>Status Timeline</h5>
+<ul class="list-group mb-4">
+  {% for step in timeline %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span>
+        <span class="badge
+          {% if step.state == 'done' %}bg-success
+          {% elif step.state == 'pending' %}bg-warning text-dark
+          {% elif step.state == 'rejected' %}bg-danger
+          {% else %}bg-light text-dark{% endif %}">&nbsp;</span>
+        {{ step.label }}
+        {% if step.detail %}<br><small class="text-muted">{{ step.detail }}</small>{% endif %}
+      </span>
+      <small class="text-muted">
+        {% if step.actor %}{{ step.actor.get_full_name|default:step.actor.username }}{% endif %}
+        {% if step.timestamp %} &middot; {{ step.timestamp|date:"d M Y H:i" }}{% endif %}
+      </small>
+    </li>
+  {% endfor %}
+</ul>
+
+{% if transfer.status == 'APPROVED' %}
+  <a href="{% url 'transfers:certificate' transfer.pk %}" class="btn btn-outline-primary mb-3">View / Print Transfer Certificate</a>
+{% endif %}
+
+<div class="d-flex gap-2">
+  {% if can_respond_as_receiving_club %}
+    <form method="post" action="{% url 'transfers:respond_accept' transfer.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-success" type="submit">Accept Transfer</button>
+    </form>
+    <a href="{% url 'transfers:respond_reject' transfer.pk %}" class="btn btn-outline-danger">Reject Transfer</a>
+  {% endif %}
+
+  {% if can_cancel %}
+    <form method="post" action="{% url 'transfers:cancel' transfer.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-outline-secondary" type="submit"
+        onclick="return confirm('Cancel this transfer request?');">Cancel Request</button>
+    </form>
+  {% endif %}
+
+  {% if can_approve_as_subcounty %}
+    <form method="post" action="{% url 'transfers:subcounty_approve' transfer.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-success" type="submit">Approve (Sub-County)</button>
+    </form>
+    <a href="{% url 'transfers:subcounty_reject' transfer.pk %}" class="btn btn-outline-danger">Reject (Sub-County)</a>
+  {% endif %}
+</div>
+{% endblock %}

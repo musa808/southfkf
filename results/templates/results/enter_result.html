@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}{% if result %}Edit Result{% else %}Enter Result{% endif %}{% endblock %}
+{% block page_title %}{{ fixture.home_team.club.name }} vs {{ fixture.away_team.club.name }}{% endblock %}
+{% block content %}
+
+<p class="text-muted">
+    {{ fixture.match_date|date:"d M Y"|default:"Date TBD" }}
+    {% if fixture.venue %}· {{ fixture.venue }}{% endif %}
+    {% if fixture.is_knockout %}· {{ fixture.knockout_fixture.round.get_name_display }}
+    {% elif fixture.is_group_stage %}· {{ fixture.group.name }}
+    {% else %}· Matchday {{ fixture.round_number }}{% endif %}
+</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card shadow-sm p-4 mb-4">
+        <h6 class="mb-3">Score</h6>
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">{{ fixture.home_team.club.name }}</label>
+                {{ form.home_score|as_crispy_field }}
+            </div>
+            <div class="col-md-2 text-center align-self-end pb-3">
+                <span class="fs-4 text-muted">–</span>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">{{ fixture.away_team.club.name }}</label>
+                {{ form.away_score|as_crispy_field }}
+            </div>
+        </div>
+
+        {% if fixture.competition.extra_time_enabled and fixture.is_knockout %}
+        <hr>
+        <h6 class="mb-3">Extra Time</h6>
+        {{ form.went_to_extra_time|as_crispy_field }}
+        <div id="et-fields">
+            <div class="row g-3">
+                <div class="col-md-5">{{ form.home_score_et|as_crispy_field }}</div>
+                <div class="col-md-2"></div>
+                <div class="col-md-5">{{ form.away_score_et|as_crispy_field }}</div>
+            </div>
+            {% if fixture.competition.penalties_enabled %}
+            {{ form.went_to_penalties|as_crispy_field }}
+            <div id="pen-fields" class="row g-3">
+                <div class="col-md-5">{{ form.home_penalties|as_crispy_field }}</div>
+                <div class="col-md-2"></div>
+                <div class="col-md-5">{{ form.away_penalties|as_crispy_field }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <hr>
+        {{ form.played_at|as_crispy_field }}
+        {{ form.notes|as_crispy_field }}
+    </div>
+
+    <div class="card shadow-sm p-4 mb-4">
+        <h6 class="mb-3">Goal Scorers</h6>
+        {{ formset.management_form }}
+        <div id="goal-formset">
+            {% for gform in formset %}
+            <div class="goal-row border rounded p-3 mb-2">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">{{ gform.scorer|as_crispy_field }}</div>
+                    <div class="col-md-3">{{ gform.scorer_name_fallback|as_crispy_field }}</div>
+                    <div class="col-md-1">{{ gform.minute|as_crispy_field }}</div>
+                    <div class="col-md-2">{{ gform.period|as_crispy_field }}</div>
+                    <div class="col-md-1">
+                        {{ gform.is_own_goal|as_crispy_field }}
+                        {{ gform.is_penalty|as_crispy_field }}
+                    </div>
+                </div>
+                {% if formset.can_delete %}{{ gform.DELETE|as_crispy_field }}{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+        {% if result %}Update result{% else %}Record result{% endif %}
+    </button>
+    <a href="{% url 'results:list' fixture.competition_id %}" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+<script>
+// Show/hide extra time and penalty fields based on checkboxes.
+function toggle(checkId, targetId) {
+    var el = document.getElementById(checkId);
+    var target = document.getElementById(targetId);
+    if (el && target) {
+        target.style.display = el.checked ? 'block' : 'none';
+        el.addEventListener('change', function() {
+            target.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    toggle('id_went_to_extra_time', 'et-fields');
+    toggle('id_went_to_penalties', 'pen-fields');
+});
+</script>
+{% endblock %}

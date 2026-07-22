@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Initiate Transfer{% endblock %}
+
+{% block content %}
+<h2>Initiate Transfer</h2>
+
+{% if not open_window %}
+  <div class="alert alert-warning">
+    There is no open transfer window right now. You can still fill this form in, but the
+    Sub-County Admin must open a window before it can be submitted.
+  </div>
+{% else %}
+  <div class="alert alert-info">Sending during: <strong>{{ open_window.name }}</strong> (closes {{ open_window.end_date }})</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  <div class="mb-3">
+    <label class="form-label">{{ form.player.label }}</label>
+    {{ form.player }}
+    {{ form.player.errors }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.to_club.label }}</label>
+    {{ form.to_club }}
+    {{ form.to_club.errors }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.transfer_type.label }}</label>
+    {{ form.transfer_type }}
+    {{ form.transfer_type.errors }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.fee.label }}</label>
+    {{ form.fee }}
+    {{ form.fee.errors }}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.loan_end_date.label }}</label>
+    {{ form.loan_end_date }}
+    {{ form.loan_end_date.errors }}
+  </div>
+  <button type="submit" class="btn btn-primary" {% if not open_window %}disabled{% endif %}>Send Transfer Request</button>
+</form>
+{% endblock %}

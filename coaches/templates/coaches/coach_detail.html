@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ coach.full_name }}</h2>
+    <div>
+        <a href="{% url 'coaches:coach-update' coach.pk %}" class="btn btn-outline-primary">Edit</a>
+        <a href="{% url 'coaches:coach-list' %}" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        {% if coach.photo %}
+            <img src="{{ coach.photo.url }}" class="img-fluid rounded mb-3" alt="{{ coach.full_name }}">
+        {% endif %}
+    </div>
+    <div class="col-md-9">
+        <table class="table table-borderless">
+            <tr><th>Club</th><td>{{ coach.club|default:"—" }}</td></tr>
+            <tr><th>Role</th><td>{{ coach.get_role_display }}</td></tr>
+            <tr><th>License</th><td>{{ coach.get_license_level_display }}</td></tr>
+            <tr><th>Nationality</th><td>{{ coach.nationality|default:"—" }}</td></tr>
+            <tr><th>Date of Birth</th><td>{{ coach.date_of_birth|default:"—" }}</td></tr>
+            <tr><th>Joined Club</th><td>{{ coach.date_joined_club|default:"—" }}</td></tr>
+            <tr><th>Phone</th><td>{{ coach.phone_number|default:"—" }}</td></tr>
+            <tr><th>Email</th><td>{{ coach.email|default:"—" }}</td></tr>
+            <tr><th>Status</th><td>{% if coach.is_active %}Active{% else %}Inactive{% endif %}</td></tr>
+        </table>
+        {% if coach.bio %}
+            <h5>Bio</h5>
+            <p>{{ coach.bio }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

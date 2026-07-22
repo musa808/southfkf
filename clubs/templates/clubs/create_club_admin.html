@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Create Club Admin{% endblock %}
+{% block page_title %}Create Club Admin account{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 520px;">
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary mt-2">Create account</button>
+    </form>
+</div>
+{% endblock %}

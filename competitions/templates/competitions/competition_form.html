@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}{% if is_create %}New Competition{% else %}Edit {{ competition.name }}{% endif %}{% endblock %}
+{% block page_title %}{% if is_create %}Create a new competition{% else %}Edit {{ competition.name }}{% endif %}{% endblock %}
+{% block content %}
+<div class="card shadow-sm p-4" style="max-width: 640px;">
+    <form method="post" id="competition-form">
+        {% csrf_token %}
+
+        {{ form.season|as_crispy_field }}
+        {{ form.name|as_crispy_field }}
+        {{ form.competition_type|as_crispy_field }}
+        {{ form.status|as_crispy_field }}
+
+        <div data-group="LEAGUE" class="type-fields border-top pt-3 mt-2">
+            <div class="text-muted small fw-semibold mb-2">League settings</div>
+            {{ form.double_round_robin|as_crispy_field }}
+            <div class="row">
+                <div class="col-4">{{ form.points_win|as_crispy_field }}</div>
+                <div class="col-4">{{ form.points_draw|as_crispy_field }}</div>
+                <div class="col-4">{{ form.points_loss|as_crispy_field }}</div>
+            </div>
+        </div>
+
+        <div data-group="KNOCKOUT" class="type-fields border-top pt-3 mt-2">
+            <div class="text-muted small fw-semibold mb-2">Knockout settings</div>
+            {{ form.two_legged_ties|as_crispy_field }}
+            {{ form.extra_time_enabled|as_crispy_field }}
+            {{ form.penalties_enabled|as_crispy_field }}
+            {{ form.has_third_place_playoff|as_crispy_field }}
+        </div>
+
+        <div data-group="GROUP_KNOCKOUT" class="type-fields border-top pt-3 mt-2">
+            <div class="text-muted small fw-semibold mb-2">Group stage settings</div>
+            {{ form.teams_qualifying_per_group|as_crispy_field }}
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">
+            {% if is_create %}Create competition{% else %}Save changes{% endif %}
+        </button>
+    </form>
+</div>
+
+<script>
+// Show only the settings relevant to the selected competition type.
+// KNOCKOUT type also shows the knockout fields when GROUP_KNOCKOUT is chosen,
+// since group+knockout competitions need both the group AND bracket settings.
+function syncCompetitionFields() {
+    var type = document.getElementById('id_competition_type').value;
+    document.querySelectorAll('.type-fields').forEach(function (el) {
+        var group = el.dataset.group;
+        var show = (group === type) || (type === 'GROUP_KNOCKOUT' && group === 'KNOCKOUT');
+        el.style.display = show ? 'block' : 'none';
+    });
+}
+document.getElementById('id_competition_type').addEventListener('change', syncCompetitionFields);
+document.addEventListener('DOMContentLoaded', syncCompetitionFields);
+</script>
+{% endblock %}
