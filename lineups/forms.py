@@ -30,9 +30,16 @@ class LineupPlayerForm(forms.Form):
     role       = forms.ChoiceField(
         choices=[("", "Not selected")] + list(LineupPlayer.Role.choices),
         required=False,
-        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+        widget=forms.Select(attrs={
+            "class": "form-select form-select-sm role-select role-field",
+        }),
     )
-    is_captain = forms.BooleanField(required=False)
+    is_captain = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "class": "form-check-input captain-field",
+        }),
+    )
     shirt_number = forms.IntegerField(
         required=False,
         widget=forms.NumberInput(attrs={

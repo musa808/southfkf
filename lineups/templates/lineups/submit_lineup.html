@@ -136,11 +136,7 @@
                             {{ player.get_position_display }}
                         </td>
                         <td>
-                            <select name="{{ pform.fields.role.widget.attrs|default:'' }}p{{ player.id }}-role"
-                                    class="form-select form-select-sm role-select role-field"
-                                    id="id_p{{ player.id }}-role">
-                                {{ pform.role }}
-                            </select>
+                            {{ pform.role }}
                         </td>
                         <td class="text-center">
                             <input type="checkbox"
