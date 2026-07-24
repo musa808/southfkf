@@ -23,6 +23,49 @@ def _can_submit_for_team(user, team):
     return user.is_club_admin and user.club == team.club
 
 
+def _squad_data(squad):
+    """Serializable squad list for the pitch picker JS."""
+    return [
+        {
+            "id": player.id,
+            "name": player.full_name,
+            "number": player.jersey_number,
+            "position": player.get_position_display(),
+        }
+        for player in squad
+    ]
+
+
+def _assignments_from_forms(player_forms):
+    """
+    Build a {player_id: {role, is_captain, shirt_number, position_label}}
+    dict from the current player_forms (bound POST data or unbound initial
+    data), so the pitch UI can restore state on both GET and a failed POST.
+    """
+    data = {}
+    for player, pf in player_forms:
+        if pf.is_bound:
+            role = pf.data.get(pf.add_prefix("role"), "")
+            raw_captain = pf.data.get(pf.add_prefix("is_captain"))
+            is_captain = raw_captain in ("on", "true", "True", True)
+            shirt = pf.data.get(pf.add_prefix("shirt_number")) or None
+            position_label = pf.data.get(pf.add_prefix("position_label"), "")
+        else:
+            role = pf.initial.get("role", "")
+            is_captain = bool(pf.initial.get("is_captain", False))
+            shirt = pf.initial.get("shirt_number")
+            position_label = pf.initial.get("position_label", "")
+
+        if role:
+            data[str(player.id)] = {
+                "role": role,
+                "is_captain": bool(is_captain),
+                "shirt_number": shirt,
+                "position_label": position_label,
+            }
+    return data
+
+
 # ── Lineups landing page ──────────────────────────────────────────────────────
 
 @login_required
@@ -186,6 +229,8 @@ def submit_lineup(request, fixture_pk, team_pk):
         "player_forms":   player_forms_display,
         "existing_lineup": existing_lineup,
         "squad_count":    squad.count(),
+        "squad_data":     _squad_data(squad),
+        "initial_assignments": _assignments_from_forms(player_forms_display),
     })
 
 
