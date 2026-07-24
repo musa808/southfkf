@@ -119,6 +119,28 @@
         font-size: 0.85rem;
     }
     .available-player:last-child { border-bottom: none; }
+
+    /* ── Shareable capture card ───────────────────────────────────────── */
+    #capture-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 1.25rem;
+        border: 1px solid var(--card-border, #DDD7C8);
+    }
+    #capture-card .capture-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid var(--chalk, #E9E4D8);
+    }
+    #capture-card .capture-title { font-weight: 800; font-size: 1.05rem; color: #1B4332; }
+    #capture-card .capture-sub { font-size: 0.78rem; color: #6B7280; }
+    #capture-card .capture-bench-title {
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.04em; color: #6B7280; margin: 1rem 0 0.5rem;
+    }
 </style>
 {% endblock %}
 
@@ -185,22 +207,44 @@
     <div class="row g-4 mb-4">
         <!-- Pitch -->
         <div class="col-lg-7">
-            <div class="pitch-wrap" id="pitch">
-                <div class="pitch-line"></div>
-                <div class="pitch-circle"></div>
-                <div class="pitch-box box-top"></div>
-                <div class="pitch-box box-bottom"></div>
-                <!-- slots injected by JS -->
+            <!-- Shareable capture card: this whole block is what gets exported as an image -->
+            <div id="capture-card">
+                <div class="capture-header">
+                    <div>
+                        <div class="capture-title">{{ team.club.name }}</div>
+                        <div class="capture-sub">
+                            {{ fixture.home_team.club.name }} vs {{ fixture.away_team.club.name }}
+                            {% if fixture.match_date %} · {{ fixture.match_date|date:"d M Y" }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="capture-sub">Formation</div>
+                        <div class="fw-bold" id="capture-formation-label">{{ lineup_form.formation.value|default:"4-3-3" }}</div>
+                    </div>
+                </div>
+
+                <div class="pitch-wrap" id="pitch">
+                    <div class="pitch-line"></div>
+                    <div class="pitch-circle"></div>
+                    <div class="pitch-box box-top"></div>
+                    <div class="pitch-box box-bottom"></div>
+                    <!-- slots injected by JS -->
+                </div>
+
+                <div class="capture-bench-title">Substitutes</div>
+                <div class="bench-row" id="bench"></div>
+            </div>
+
+            <div class="d-flex justify-content-center mt-3">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="download-image-btn">
+                    <i class="bi bi-download me-1"></i>Download Lineup Image
+                </button>
             </div>
             <p class="text-center text-muted small mt-2 mb-0">Tap an open position to assign a starter. Tap a filled slot's ★ to set captain, ✕ to remove.</p>
         </div>
 
-        <!-- Bench + available -->
+        <!-- Available -->
         <div class="col-lg-5">
-            <div class="card shadow-sm p-3 mb-3">
-                <h6 class="fw-bold mb-2"><i class="bi bi-arrow-repeat me-1" style="color:var(--pitch-green)"></i>Substitutes <span class="text-muted small">(max 7)</span></h6>
-                <div class="bench-row" id="bench"></div>
-            </div>
             <div class="card shadow-sm p-3">
                 <h6 class="fw-bold mb-2">
                     <i class="bi bi-people me-1" style="color:var(--pitch-green)"></i>
@@ -283,6 +327,8 @@
 
 {{ squad_data|json_script:"squad-data" }}
 {{ initial_assignments|json_script:"initial-assignments-data" }}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 // ── Formation layouts (percentage x/y on the pitch, y: 0 = attacking end, 100 = own goal) ──
@@ -531,6 +577,8 @@ function openPicker(type, index) {
 if (formationField) {
     formationField.addEventListener('change', function () {
         currentFormation = this.value;
+        const label = document.getElementById('capture-formation-label');
+        if (label) label.textContent = currentFormation;
         const layout = layoutFor(currentFormation);
         const resized = new Array(layout.length).fill(null);
         starterSlots.forEach((pid, idx) => { if (idx < resized.length) resized[idx] = pid; });
@@ -539,6 +587,39 @@ if (formationField) {
         renderPitch(); renderBench(); renderAvailable();
     });
 }
+
+// ── Download lineup image ───────────────────────────────────────────────────
+function downloadLineupImage() {
+    const btn = document.getElementById('download-image-btn');
+    const card = document.getElementById('capture-card');
+    const originalLabel = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generating...';
+
+    html2canvas(card, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+    }).then(canvas => {
+        const link = document.createElement('a');
+        const teamSlug = '{{ team.club.name|slugify }}' || 'team';
+        const fixtureSlug = '{{ fixture.pk }}';
+        link.download = `lineup-${teamSlug}-fixture-${fixtureSlug}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }).catch(err => {
+        console.error('Failed to generate lineup image:', err);
+        alert('Could not generate the image. Please try again.');
+    }).finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalLabel;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const downloadBtn = document.getElementById('download-image-btn');
+    if (downloadBtn) downloadBtn.addEventListener('click', downloadLineupImage);
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
