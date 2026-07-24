@@ -292,6 +292,11 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.app_name == 'lineups' %}active{% endif %}" href="{% url 'lineups:home' %}">
+                        <i class="bi bi-list-check me-2"></i>Lineups
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.app_name == 'transfers' %}active{% endif %}" href="{% url 'transfers:dashboard' %}">
                         <i class="bi bi-arrow-left-right me-2"></i>Transfers
                     </a>
@@ -353,6 +358,11 @@
                 <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.app_name == 'competitions' %}active{% endif %}" href="{% url 'competitions:list' %}">
                         <i class="bi bi-trophy me-2"></i>Competitions
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.app_name == 'lineups' %}active{% endif %}" href="{% url 'lineups:home' %}">
+                        <i class="bi bi-list-check me-2"></i>Lineups
                     </a>
                 </li>
                 <li class="nav-item">

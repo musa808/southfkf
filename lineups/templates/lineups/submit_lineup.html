@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Submit Lineup · {{ team.club.name }}{% endblock %}
+{% block page_title %}
+    {% if existing_lineup %}Edit{% else %}Submit{% endif %}
+    Lineup — {{ team.club.name }}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .player-table th {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6B7280;
+        background: var(--chalk);
+    }
+    .player-table td { vertical-align: middle; padding: 0.6rem 0.75rem; }
+    .player-table tbody tr:hover { background: #FAFAFA; }
+    .role-select { min-width: 130px; }
+    .starter-counter {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--pitch-green);
+    }
+    .counter-box {
+        background: var(--chalk);
+        border-radius: 10px;
+        padding: 0.75rem 1.2rem;
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .count-item { text-align: center; }
+    .count-num {
+        font-size: 1.5rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+    .count-label { font-size: 0.7rem; color: #9CA3AF; text-transform: uppercase; }
+    .count-ok   { color: var(--pitch-green); }
+    .count-warn { color: #DC2626; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Fixture info bar -->
+<div class="card shadow-sm p-3 mb-4">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div>
+            <div class="small text-muted">Fixture</div>
+            <div class="fw-semibold">
+                {{ fixture.home_team.club.name }}
+                <span class="text-muted mx-1">vs</span>
+                {{ fixture.away_team.club.name }}
+            </div>
+        </div>
+        <div class="vr"></div>
+        <div>
+            <div class="small text-muted">Date</div>
+            <div class="fw-semibold">
+                {{ fixture.match_date|date:"d M Y" }}
+                {% if fixture.kickoff_time %} · {{ fixture.kickoff_time|time:"H:i" }}{% endif %}
+            </div>
+        </div>
+        <div class="vr"></div>
+        <div>
+            <div class="small text-muted">Squad available</div>
+            <div class="fw-semibold">{{ squad_count }} players</div>
+        </div>
+    </div>
+</div>
+
+<form method="post" id="lineup-form">
+    {% csrf_token %}
+
+    <!-- Formation + notes -->
+    <div class="card shadow-sm p-4 mb-4" style="max-width:480px;">
+        <h6 class="fw-bold mb-3">
+            <i class="bi bi-diagram-3 me-1" style="color:var(--pitch-green)"></i>
+            Formation & Notes
+        </h6>
+        {{ lineup_form|crispy }}
+    </div>
+
+    <!-- Live counter -->
+    <div class="counter-box">
+        <div class="count-item">
+            <div class="count-num" id="starter-count">0</div>
+            <div class="count-label">Starters <span style="color:#DC2626">/ 11</span></div>
+        </div>
+        <div class="count-item">
+            <div class="count-num" id="sub-count">0</div>
+            <div class="count-label">Subs <span style="color:#6B7280">/ 7 max</span></div>
+        </div>
+        <div class="count-item">
+            <div class="count-num" id="captain-count">0</div>
+            <div class="count-label">Captain <span style="color:#DC2626">/ 1</span></div>
+        </div>
+        <div class="ms-auto small text-muted">
+            Select exactly 11 starters · 1 captain · up to 7 subs
+        </div>
+    </div>
+
+    <!-- Player selection table -->
+    <div class="card shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table player-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:30px;">#</th>
+                        <th>Player</th>
+                        <th>Pos</th>
+                        <th>Role</th>
+                        <th>Captain</th>
+                        <th>Shirt No.</th>
+                        <th>Position in Formation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for player, pform in player_forms %}
+                    {{ pform.player_id }}
+                    <tr class="player-row-tr">
+                        <td class="text-muted small">
+                            {{ player.jersey_number|default:"—" }}
+                        </td>
+                        <td>
+                            <div class="fw-semibold" style="font-size:0.9rem;">
+                                {{ player.full_name }}
+                            </div>
+                        </td>
+                        <td class="text-muted small">
+                            {{ player.get_position_display }}
+                        </td>
+                        <td>
+                            <select name="{{ pform.fields.role.widget.attrs|default:'' }}p{{ player.id }}-role"
+                                    class="form-select form-select-sm role-select role-field"
+                                    id="id_p{{ player.id }}-role">
+                                {{ pform.role }}
+                            </select>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox"
+                                   name="p{{ player.id }}-is_captain"
+                                   class="form-check-input captain-field"
+                                   {% if pform.initial.is_captain %}checked{% endif %}>
+                        </td>
+                        <td>
+                            {{ pform.shirt_number }}
+                        </td>
+                        <td>
+                            {{ pform.position_label }}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center">
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+            <i class="bi bi-check-circle me-1"></i>
+            {% if existing_lineup %}Update Lineup{% else %}Submit Lineup{% endif %}
+        </button>
+        <a href="{% url 'lineups:fixture_lineups' fixture.pk %}"
+           class="btn btn-outline-secondary">Cancel</a>
+        <span class="text-muted small ms-2" id="validation-hint"></span>
+    </div>
+</form>
+
+<script>
+// ── Live counter ──────────────────────────────────────────────────────────────
+function updateCounts() {
+    const roles     = document.querySelectorAll('.role-field');
+    const captains  = document.querySelectorAll('.captain-field');
+    let starters = 0, subs = 0, caps = 0;
+
+    roles.forEach(sel => {
+        if (sel.value === 'STARTER')    starters++;
+        if (sel.value === 'SUBSTITUTE') subs++;
+    });
+    captains.forEach(chk => { if (chk.checked) caps++; });
+
+    const sc = document.getElementById('starter-count');
+    const uc = document.getElementById('sub-count');
+    const cc = document.getElementById('captain-count');
+
+    sc.textContent = starters;
+    uc.textContent = subs;
+    cc.textContent = caps;
+
+    sc.className = 'count-num ' + (starters === 11 ? 'count-ok' : 'count-warn');
+    uc.className = 'count-num ' + (subs <= 7 ? 'count-ok' : 'count-warn');
+    cc.className = 'count-num ' + (caps === 1 ? 'count-ok' : 'count-warn');
+
+    const hint = document.getElementById('validation-hint');
+    if (starters === 11 && caps === 1 && subs <= 7) {
+        hint.textContent = '✓ Lineup is complete';
+        hint.style.color = '#16A34A';
+    } else {
+        const issues = [];
+        if (starters !== 11) issues.push(`${starters}/11 starters`);
+        if (caps !== 1) issues.push(caps === 0 ? 'no captain' : 'multiple captains');
+        if (subs > 7) issues.push('too many subs');
+        hint.textContent = issues.join(' · ');
+        hint.style.color = '#DC2626';
+    }
+}
+
+document.querySelectorAll('.role-field, .captain-field')
+    .forEach(el => el.addEventListener('change', updateCounts));
+
+// Run on page load to restore saved state
+document.addEventListener('DOMContentLoaded', updateCounts);
+
+// ── Enforce single captain ────────────────────────────────────────────────────
+document.querySelectorAll('.captain-field').forEach(chk => {
+    chk.addEventListener('change', function() {
+        if (this.checked) {
+            document.querySelectorAll('.captain-field').forEach(other => {
+                if (other !== this) other.checked = false;
+            });
+        }
+        updateCounts();
+    });
+});
+</script>
+{% endblock %}

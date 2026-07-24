@@ -18,6 +18,7 @@ urlpatterns = [
     path("standings/", include("standings.urls")),
     path("reports/", include("reports.urls")),
     path("transfers/", include("transfers.urls")),
+    path("lineups/", include("lineups.urls")),
 ]
 
 if settings.DEBUG:

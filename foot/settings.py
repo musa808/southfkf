@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "reports",
     "dashboard",
     "transfers",
+    "lineups",
 ]
 
 MIDDLEWARE = [

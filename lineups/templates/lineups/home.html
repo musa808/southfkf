@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Lineups{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Lineups</h2>
+
+{% if rows %}
+<table class="table table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Fixture</th>
+            <th>Team</th>
+            <th>Status</th>
+            <th class="text-end">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.fixture }}</td>
+            <td>{{ row.team }}</td>
+            <td>
+                {% if row.lineup %}
+                    <span class="badge bg-success">Submitted</span>
+                {% else %}
+                    <span class="badge bg-secondary">Not submitted</span>
+                {% endif %}
+                {% if not row.editable %}
+                    <span class="badge bg-warning text-dark">Locked</span>
+                {% endif %}
+            </td>
+            <td class="text-end">
+                {% if row.editable %}
+                    <a href="{% url 'lineups:submit' fixture_pk=row.fixture.pk team_pk=row.team.pk %}"
+                       class="btn btn-sm btn-primary">
+                        {% if row.lineup %}Edit{% else %}Submit{% endif %}
+                    </a>
+                {% else %}
+                    <a href="{% url 'lineups:fixture_lineups' fixture_pk=row.fixture.pk %}"
+                       class="btn btn-sm btn-outline-secondary">
+                        View
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">No fixtures found that require a lineup submission from you.</p>
+{% endif %}
+{% endblock %}

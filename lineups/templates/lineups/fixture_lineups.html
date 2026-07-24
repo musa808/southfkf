@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Lineups · {{ fixture }}{% endblock %}
+{% block page_title %}Lineups{% endblock %}
+
+{% block extra_head %}
+<style>
+    .pitch {
+        background: linear-gradient(180deg, #1a5c2e 0%, #1e6b34 25%,
+                    #1a5c2e 25%, #1a5c2e 50%, #1e6b34 50%,
+                    #1e6b34 75%, #1a5c2e 75%, #1a5c2e 100%);
+        border-radius: 12px;
+        padding: 1.5rem 1rem;
+        position: relative;
+        min-height: 260px;
+        border: 3px solid rgba(255,255,255,0.15);
+    }
+    .pitch-lines {
+        position: absolute; inset: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        pointer-events: none;
+    }
+    .pitch-lines::before {
+        content: '';
+        position: absolute;
+        left: 50%; top: 0; bottom: 0;
+        width: 1px;
+        background: rgba(255,255,255,0.2);
+    }
+    .pitch-lines::after {
+        content: '';
+        position: absolute;
+        left: 25%; right: 25%;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 60%;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 50%;
+    }
+    .player-dot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+    .player-dot .avatar {
+        width: 34px; height: 34px;
+        border-radius: 50%;
+        background: #fff;
+        color: #1B4332;
+        font-size: 0.7rem;
+        font-weight: 800;
+        display: flex; align-items: center; justify-content: center;
+        border: 2px solid #C9A24B;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .player-dot .avatar.captain {
+        border-color: #FFD700;
+        background: #FFD700;
+        color: #1B4332;
+    }
+    .player-dot .pname {
+        font-size: 0.62rem;
+        color: #fff;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        text-align: center;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .player-dot .pnum {
+        font-size: 0.55rem;
+        color: rgba(255,255,255,0.7);
+    }
+    .lineup-card {
+        border-radius: 12px;
+        border: 1px solid var(--card-border);
+        overflow: hidden;
+    }
+    .lineup-header {
+        background: var(--pitch-green);
+        color: #fff;
+        padding: 0.9rem 1rem;
+    }
+    .player-row {
+        display: flex;
+        align-items: center;
+        padding: 0.55rem 1rem;
+        border-bottom: 1px solid var(--card-border);
+        gap: 0.75rem;
+    }
+    .player-row:last-child { border-bottom: none; }
+    .jersey {
+        width: 28px; height: 28px;
+        border-radius: 6px;
+        background: var(--pitch-green);
+        color: #C9A24B;
+        font-size: 0.75rem;
+        font-weight: 800;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .formation-badge {
+        background: rgba(255,255,255,0.15);
+        border-radius: 6px;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #C9A24B;
+    }
+    .not-submitted {
+        background: var(--chalk);
+        border-radius: 12px;
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        color: #9CA3AF;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Fixture header -->
+<div class="card shadow-sm p-4 mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="text-muted small">
+            {{ fixture.competition.name }}
+            {% if fixture.is_knockout %}· {{ fixture.knockout_fixture.round.get_name_display }}
+            {% elif fixture.is_group_stage %}· {{ fixture.group.name }}
+            {% else %}· Matchday {{ fixture.round_number }}{% endif %}
+        </div>
+        <div class="text-muted small">
+            {{ fixture.match_date|date:"l, d M Y" }}
+            {% if fixture.kickoff_time %}· KO {{ fixture.kickoff_time|time:"H:i" }}{% endif %}
+            {% if fixture.venue %} · {{ fixture.venue }}{% endif %}
+        </div>
+    </div>
+    <div class="d-flex align-items-center justify-content-center gap-4 mt-3 flex-wrap">
+        <div class="fw-bold fs-5 text-end" style="flex:1;min-width:0;">
+            {{ fixture.home_team.club.name }}
+        </div>
+        <div class="text-muted fw-bold">vs</div>
+        <div class="fw-bold fs-5 text-start" style="flex:1;min-width:0;">
+            {{ fixture.away_team.club.name }}
+        </div>
+    </div>
+</div>
+
+<!-- Submit buttons -->
+<div class="d-flex gap-2 justify-content-center flex-wrap mb-4">
+    {% if can_submit_home %}
+    <a href="{% url 'lineups:submit' fixture.pk fixture.home_team.pk %}"
+       class="btn btn-sm btn-primary">
+        <i class="bi bi-pencil-square me-1"></i>
+        {% if home_lineup %}Edit{% else %}Submit{% endif %}
+        {{ fixture.home_team.club.name }} Lineup
+    </a>
+    {% endif %}
+    {% if can_submit_away %}
+    <a href="{% url 'lineups:submit' fixture.pk fixture.away_team.pk %}"
+       class="btn btn-sm btn-primary">
+        <i class="bi bi-pencil-square me-1"></i>
+        {% if away_lineup %}Edit{% else %}Submit{% endif %}
+        {{ fixture.away_team.club.name }} Lineup
+    </a>
+    {% endif %}
+</div>
+
+<!-- Side-by-side lineup cards -->
+<div class="row g-4">
+
+    <!-- Home team lineup -->
+    <div class="col-md-6">
+        {% if home_lineup %}
+        <div class="lineup-card shadow-sm">
+            <div class="lineup-header d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="fw-bold">{{ fixture.home_team.club.name }}</div>
+                    <div class="small" style="color:rgba(255,255,255,0.7);">Home</div>
+                </div>
+                <span class="formation-badge">{{ home_lineup.formation }}</span>
+            </div>
+            <!-- Starters -->
+            <div class="px-0">
+                <div class="px-3 py-2"
+                     style="background:var(--chalk);font-size:0.72rem;
+                            font-weight:700;color:#6B7280;letter-spacing:0.06em;
+                            text-transform:uppercase;">
+                    Starting XI
+                </div>
+                {% for lp in home_lineup.starters %}
+                <div class="player-row">
+                    <div class="jersey">
+                        {{ lp.shirt_number|default:lp.player.jersey_number|default:"–" }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold" style="font-size:0.88rem;">
+                            {{ lp.player.full_name }}
+                            {% if lp.is_captain %}
+                            <span style="color:#C9A24B;font-size:0.8rem;" title="Captain">© </span>
+                            {% endif %}
+                        </div>
+                        {% if lp.position_label %}
+                        <div class="text-muted" style="font-size:0.72rem;">
+                            {{ lp.position_label }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <span style="font-size:0.7rem;color:#9CA3AF;">
+                        {{ lp.player.get_position_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- Substitutes -->
+            {% if home_lineup.substitutes %}
+            <div class="px-0">
+                <div class="px-3 py-2"
+                     style="background:var(--chalk);font-size:0.72rem;
+                            font-weight:700;color:#6B7280;letter-spacing:0.06em;
+                            text-transform:uppercase;">
+                    Substitutes
+                </div>
+                {% for lp in home_lineup.substitutes %}
+                <div class="player-row" style="background:#FAFAFA;">
+                    <div class="jersey" style="background:#6B7280;">
+                        {{ lp.shirt_number|default:lp.player.jersey_number|default:"–" }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div style="font-size:0.85rem;color:#6B7280;">
+                            {{ lp.player.full_name }}
+                        </div>
+                    </div>
+                    <span style="font-size:0.68rem;color:#9CA3AF;">SUB</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="px-3 py-2 text-muted" style="font-size:0.7rem;">
+                Submitted {{ home_lineup.submitted_at|date:"d M Y, H:i" }}
+                · Updated {{ home_lineup.updated_at|date:"H:i" }}
+            </div>
+        </div>
+        {% else %}
+        <div class="not-submitted">
+            <i class="bi bi-clipboard-x fs-2 mb-2 d-block opacity-25"></i>
+            <div class="fw-semibold mb-1">{{ fixture.home_team.club.name }}</div>
+            <div class="small">Lineup not submitted yet</div>
+            {% if can_submit_home %}
+            <a href="{% url 'lineups:submit' fixture.pk fixture.home_team.pk %}"
+               class="btn btn-sm btn-primary mt-3">
+                <i class="bi bi-plus-lg me-1"></i>Submit Lineup
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Away team lineup -->
+    <div class="col-md-6">
+        {% if away_lineup %}
+        <div class="lineup-card shadow-sm">
+            <div class="lineup-header d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="fw-bold">{{ fixture.away_team.club.name }}</div>
+                    <div class="small" style="color:rgba(255,255,255,0.7);">Away</div>
+                </div>
+                <span class="formation-badge">{{ away_lineup.formation }}</span>
+            </div>
+            <!-- Starters -->
+            <div class="px-0">
+                <div class="px-3 py-2"
+                     style="background:var(--chalk);font-size:0.72rem;
+                            font-weight:700;color:#6B7280;letter-spacing:0.06em;
+                            text-transform:uppercase;">
+                    Starting XI
+                </div>
+                {% for lp in away_lineup.starters %}
+                <div class="player-row">
+                    <div class="jersey">
+                        {{ lp.shirt_number|default:lp.player.jersey_number|default:"–" }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold" style="font-size:0.88rem;">
+                            {{ lp.player.full_name }}
+                            {% if lp.is_captain %}
+                            <span style="color:#C9A24B;font-size:0.8rem;" title="Captain">©</span>
+                            {% endif %}
+                        </div>
+                        {% if lp.position_label %}
+                        <div class="text-muted" style="font-size:0.72rem;">
+                            {{ lp.position_label }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <span style="font-size:0.7rem;color:#9CA3AF;">
+                        {{ lp.player.get_position_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- Substitutes -->
+            {% if away_lineup.substitutes %}
+            <div class="px-0">
+                <div class="px-3 py-2"
+                     style="background:var(--chalk);font-size:0.72rem;
+                            font-weight:700;color:#6B7280;letter-spacing:0.06em;
+                            text-transform:uppercase;">
+                    Substitutes
+                </div>
+                {% for lp in away_lineup.substitutes %}
+                <div class="player-row" style="background:#FAFAFA;">
+                    <div class="jersey" style="background:#6B7280;">
+                        {{ lp.shirt_number|default:lp.player.jersey_number|default:"–" }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div style="font-size:0.85rem;color:#6B7280;">
+                            {{ lp.player.full_name }}
+                        </div>
+                    </div>
+                    <span style="font-size:0.68rem;color:#9CA3AF;">SUB</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="px-3 py-2 text-muted" style="font-size:0.7rem;">
+                Submitted {{ away_lineup.submitted_at|date:"d M Y, H:i" }}
+                · Updated {{ away_lineup.updated_at|date:"H:i" }}
+            </div>
+        </div>
+        {% else %}
+        <div class="not-submitted">
+            <i class="bi bi-clipboard-x fs-2 mb-2 d-block opacity-25"></i>
+            <div class="fw-semibold mb-1">{{ fixture.away_team.club.name }}</div>
+            <div class="small">Lineup not submitted yet</div>
+            {% if can_submit_away %}
+            <a href="{% url 'lineups:submit' fixture.pk fixture.away_team.pk %}"
+               class="btn btn-sm btn-primary mt-3">
+                <i class="bi bi-plus-lg me-1"></i>Submit Lineup
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'fixtures:list' fixture.competition_id %}" class="btn btn-link mt-4 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to fixtures
+</a>
+{% endblock %}
