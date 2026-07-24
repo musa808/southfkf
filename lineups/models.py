@@ -99,6 +99,15 @@ class Lineup(models.Model):
         return self.starter_count == 11
 
     def clean(self):
+        # On initial creation the instance has no pk yet, so the reverse
+        # `players` relationship can't be queried. The view performs the
+        # authoritative starters/subs/captain validation itself after the
+        # LineupPlayer rows are built — this check only re-validates an
+        # already-saved lineup (e.g. if something edits LineupPlayer rows
+        # directly, outside the normal submit flow).
+        if not self.pk:
+            return
+
         starters = self.players.filter(role=LineupPlayer.Role.STARTER).count()
         subs = self.players.filter(role=LineupPlayer.Role.SUBSTITUTE).count()
         captains = self.players.filter(is_captain=True).count()
