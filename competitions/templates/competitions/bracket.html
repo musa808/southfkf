@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Bracket · {{ competition.name }}{% endblock %}
+{% block page_title %}Knockout Bracket — {{ competition.name }}{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+.team-chip {
+    padding: .5rem .75rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: .375rem;
+    cursor: grab;
+    font-size: .875rem;
+    user-select: none;
+}
+.team-chip:active { cursor: grabbing; }
+.team-chip.dragging { opacity: .4; }
+
+.bracket-scroll { overflow-x: auto; padding-bottom: 1rem; }
+.bracket { display: flex; gap: 2.5rem; min-width: max-content; }
+.bracket-round { display: flex; flex-direction: column; min-width: 220px; }
+.bracket-round-fixtures {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 1.5rem;
+}
+.bracket-tie {
+    border: 1px solid #dee2e6;
+    border-radius: .5rem;
+    overflow: hidden;
+    background: #fff;
+}
+.bracket-slot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .5rem .75rem;
+    font-size: .875rem;
+    min-height: 40px;
+    border-bottom: 1px solid #eee;
+    transition: background-color .15s ease;
+}
+.bracket-slot:last-child { border-bottom: none; }
+.bracket-slot.winner { background: #eaf7ee; font-weight: 600; }
+.bracket-slot.drag-over { background: #e7f1ff; }
+.slot-placeholder { color: #adb5bd; font-style: italic; }
+.slot-clear {
+    border: none; background: none; color: #adb5bd; font-size: 1rem;
+    line-height: 1; padding: 0 .25rem; cursor: pointer;
+}
+.slot-clear:hover { color: #dc3545; }
+</style>
+
+<div class="row">
+    {% if can_manage %}
+    <div class="col-12 col-lg-2 mb-3">
+        <div class="card shadow-sm p-3">
+            <h6 class="mb-2">Unassigned teams</h6>
+            <div id="team-pool" class="d-flex flex-column gap-2">
+                {% for ct in unassigned_teams %}
+                <div class="team-chip" draggable="true" data-team-id="{{ ct.pk }}">
+                    {{ ct.club.name }}
+                </div>
+                {% endfor %}
+            </div>
+            {% if not unassigned_teams %}
+            <p class="text-muted small mb-0">All entered teams are placed.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col">
+        <div class="bracket-scroll">
+            <div class="bracket">
+                {% for rnd in rounds %}
+                <div class="bracket-round">
+                    <h6 class="text-center mb-3">{{ rnd.get_name_display }}</h6>
+                    <div class="bracket-round-fixtures">
+                        {% for kf in rnd.fixtures.all %}
+                        <div class="bracket-tie">
+                            <div class="bracket-slot {% if kf.winner_id and kf.winner_id == kf.team_a_id %}winner{% endif %}"
+                                 data-slot="a"
+                                 data-assign-url="{% url 'competitions:bracket_assign_slot' kf.pk %}">
+                                {% if kf.team_a %}
+                                    <span class="slot-team">{{ kf.team_a.club.name }}</span>
+                                    {% if can_manage and kf.match.status|default:"" != "PLAYED" %}
+                                    <button type="button" class="slot-clear"
+                                            data-clear-url="{% url 'competitions:bracket_clear_slot' kf.pk %}"
+                                            data-slot="a" title="Remove">&times;</button>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="slot-placeholder">Drop team here</span>
+                                {% endif %}
+                            </div>
+                            <div class="bracket-slot {% if kf.winner_id and kf.winner_id == kf.team_b_id %}winner{% endif %}"
+                                 data-slot="b"
+                                 data-assign-url="{% url 'competitions:bracket_assign_slot' kf.pk %}">
+                                {% if kf.team_b %}
+                                    <span class="slot-team">{{ kf.team_b.club.name }}</span>
+                                    {% if can_manage and kf.match.status|default:"" != "PLAYED" %}
+                                    <button type="button" class="slot-clear"
+                                            data-clear-url="{% url 'competitions:bracket_clear_slot' kf.pk %}"
+                                            data-slot="b" title="Remove">&times;</button>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="slot-placeholder">Drop team here</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'competitions:detail' competition.pk %}" class="btn btn-link mt-3 ps-0">
+    <i class="bi bi-arrow-left me-1"></i>Back to {{ competition.name }}
+</a>
+
+{% if can_manage %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;\\s*)(' + name + ')=([^;]*)');
+        return match ? decodeURIComponent(match[3]) : null;
+    }
+    const csrfToken = getCookie('csrftoken');
+
+    function post(url, data) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(data),
+        }).then(r => r.json().then(json => ({ ok: r.ok, json })));
+    }
+
+    document.querySelectorAll('.team-chip').forEach(chip => {
+        chip.addEventListener('dragstart', function (e) {
+            e.dataTransfer.setData('team-id', chip.dataset.teamId);
+            chip.classList.add('dragging');
+        });
+        chip.addEventListener('dragend', function () {
+            chip.classList.remove('dragging');
+        });
+    });
+
+    document.querySelectorAll('.bracket-slot').forEach(slotEl => {
+        slotEl.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            slotEl.classList.add('drag-over');
+        });
+        slotEl.addEventListener('dragleave', function () {
+            slotEl.classList.remove('drag-over');
+        });
+        slotEl.addEventListener('drop', function (e) {
+            e.preventDefault();
+            slotEl.classList.remove('drag-over');
+            const teamId = e.dataTransfer.getData('team-id');
+            if (!teamId) return;
+
+            post(slotEl.dataset.assignUrl, { team_id: teamId, slot: slotEl.dataset.slot })
+                .then(({ ok, json }) => {
+                    if (!ok) {
+                        alert(json.error || 'Could not assign team.');
+                        return;
+                    }
+                    window.location.reload();
+                });
+        });
+    });
+
+    document.querySelectorAll('.slot-clear').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            post(btn.dataset.clearUrl, { slot: btn.dataset.slot })
+                .then(({ ok, json }) => {
+                    if (!ok) {
+                        alert(json.error || 'Could not clear slot.');
+                        return;
+                    }
+                    window.location.reload();
+                });
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

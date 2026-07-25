@@ -120,11 +120,23 @@
 {% if competition.has_knockout_bracket %}
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h6 class="mb-0">Knockout rounds</h6>
-    {% if user.is_super_admin or user.is_subcounty_admin %}
-        <a href="{% url 'competitions:setup_knockout_rounds' competition.pk %}" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-diagram-3 me-1"></i>Set up rounds
-        </a>
-    {% endif %}
+    <div class="d-flex gap-2">
+        {% if user.is_super_admin or user.is_subcounty_admin %}
+            <a href="{% url 'competitions:setup_knockout_rounds' competition.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-diagram-3 me-1"></i>Set up rounds
+            </a>
+            {% if knockout_rounds %}
+                <a href="{% url 'competitions:generate_bracket_slots' competition.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-grid-3x3-gap me-1"></i>Generate bracket slots
+                </a>
+            {% endif %}
+        {% endif %}
+        {% if knockout_rounds %}
+            <a href="{% url 'competitions:bracket' competition.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-diagram-3 me-1"></i>Open bracket
+            </a>
+        {% endif %}
+    </div>
 </div>
 
 {% if knockout_rounds %}
@@ -145,7 +157,12 @@
                 {% endfor %}
                 </ul>
             {% else %}
-                <span class="text-muted small">No fixture slots yet — use Django Admin to add slots to this round (one per matchup, e.g. SF1, SF2).</span>
+                <span class="text-muted small">
+                    No fixture slots yet
+                    {% if user.is_super_admin or user.is_subcounty_admin %}
+                        — use <strong>Generate bracket slots</strong> above.
+                    {% endif %}
+                </span>
             {% endif %}
         </div>
     </div>

@@ -183,3 +183,135 @@ def setup_knockout_rounds(request, pk):
         "competitions/setup_knockout_rounds.html",
         {"competition": competition, "round_choices": ROUND_CHOICES},
     )
+from django.db import models as db_models
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+from fixtures.models import Fixture
+
+from .bracket_generator import generate_bracket_slots
+from .models import KnockoutFixture  # add to your existing models import
+
+
+@login_required
+@user_passes_test(_can_manage)
+def generate_bracket_slots_view(request, pk):
+    competition = get_object_or_404(Competition, pk=pk)
+    if not competition.has_knockout_bracket:
+        messages.error(request, "This competition doesn't use a knockout bracket.")
+        return redirect("competitions:detail", pk=competition.pk)
+
+    if not competition.knockout_rounds.exists():
+        messages.error(request, "Set up knockout rounds first.")
+        return redirect("competitions:detail", pk=competition.pk)
+
+    created = generate_bracket_slots(competition)
+    if created:
+        messages.success(request, f"Generated {len(created)} bracket slot(s).")
+    else:
+        messages.info(request, "Bracket slots already exist for every round.")
+    return redirect("competitions:bracket", competition_pk=competition.pk)
+
+
+@login_required
+def bracket_view(request, competition_pk):
+    competition = get_object_or_404(Competition, pk=competition_pk)
+
+    if not competition.has_knockout_bracket:
+        messages.error(request, "This competition doesn't have a knockout bracket.")
+        return redirect("competitions:detail", pk=competition.pk)
+
+    rounds = competition.knockout_rounds.prefetch_related(
+        db_models.Prefetch(
+            "fixtures",
+            queryset=KnockoutFixture.objects.select_related(
+                "team_a__club", "team_b__club", "winner__club", "match"
+            ).order_by("slot_number"),
+        )
+    ).order_by("order")
+
+    assigned_team_ids = set()
+    for rnd in rounds:
+        for kf in rnd.fixtures.all():
+            if kf.team_a_id:
+                assigned_team_ids.add(kf.team_a_id)
+            if kf.team_b_id:
+                assigned_team_ids.add(kf.team_b_id)
+
+    unassigned_teams = (
+        CompetitionTeam.objects.filter(competition=competition, status=CompetitionTeam.Status.ENTERED)
+        .exclude(pk__in=assigned_team_ids)
+        .select_related("club")
+        .order_by("club__name")
+    )
+
+    return render(
+        request,
+        "competitions/bracket.html",
+        {
+            "competition": competition,
+            "rounds": rounds,
+            "unassigned_teams": unassigned_teams,
+            "can_manage": _can_manage(request.user),
+        },
+    )
+
+
+def _slot_is_locked(knockout_fixture):
+    return hasattr(knockout_fixture, "match") and knockout_fixture.match.status == Fixture.Status.PLAYED
+
+
+@login_required
+@user_passes_test(_can_manage)
+@require_POST
+def bracket_assign_slot(request, fixture_pk):
+    knockout_fixture = get_object_or_404(
+        KnockoutFixture.objects.select_related("round__competition"), pk=fixture_pk
+    )
+    competition = knockout_fixture.round.competition
+
+    slot = request.POST.get("slot")
+    team_id = request.POST.get("team_id")
+    if slot not in ("a", "b"):
+        return JsonResponse({"error": "Invalid slot."}, status=400)
+    if _slot_is_locked(knockout_fixture):
+        return JsonResponse({"error": "This tie has already been played."}, status=400)
+
+    team = get_object_or_404(CompetitionTeam, pk=team_id, competition=competition)
+    if slot == "a":
+        knockout_fixture.team_a = team
+    else:
+        knockout_fixture.team_b = team
+    knockout_fixture.save(update_fields=["team_a", "team_b"])
+
+    if knockout_fixture.team_a and knockout_fixture.team_b:
+        Fixture.objects.update_or_create(
+            knockout_fixture=knockout_fixture,
+            defaults={
+                "competition": competition,
+                "home_team": knockout_fixture.team_a,
+                "away_team": knockout_fixture.team_b,
+            },
+        )
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@user_passes_test(_can_manage)
+@require_POST
+def bracket_clear_slot(request, fixture_pk):
+    knockout_fixture = get_object_or_404(KnockoutFixture, pk=fixture_pk)
+    if _slot_is_locked(knockout_fixture):
+        return JsonResponse({"error": "This tie has already been played."}, status=400)
+
+    slot = request.POST.get("slot")
+    if slot not in ("a", "b"):
+        return JsonResponse({"error": "Invalid slot."}, status=400)
+
+    if slot == "a":
+        knockout_fixture.team_a = None
+    else:
+        knockout_fixture.team_b = None
+    knockout_fixture.save(update_fields=["team_a", "team_b"])
+    Fixture.objects.filter(knockout_fixture=knockout_fixture).delete()
+    return JsonResponse({"ok": True})
