@@ -71,10 +71,11 @@
                                 </a>
                             {% endif %}
 
-                            <!-- Edit fixture date/venue/status -->
+                            <!-- Edit fixture date/time (and venue/status) -->
                             <a href="{% url 'fixtures:edit' fx.pk %}"
-                               class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-pencil"></i>
+                               class="btn btn-sm btn-outline-secondary"
+                               title="Edit date &amp; time">
+                                <i class="bi bi-pencil me-1"></i>Edit date &amp; time
                             </a>
 
                         {% endif %}

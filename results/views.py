@@ -47,15 +47,20 @@ def enter_result(request, fixture_pk):
         form = MatchResultForm(request.POST)
         formset = GoalEventFormSet(request.POST, form_kwargs={"fixture": fixture})
         if form.is_valid() and formset.is_valid():
+            # Mark fixture as played BEFORE saving the result. The
+            # MatchResult post_save signal triggers standings
+            # recalculation immediately, and that recalculation only
+            # counts fixtures with status=PLAYED — so this must happen
+            # first, or the just-entered result gets silently excluded.
+            fixture.status = Fixture.Status.PLAYED
+            fixture.save(update_fields=["status"])
+
             result = form.save(commit=False)
             result.fixture = fixture
             result.full_clean()
             result.save()
             formset.instance = result
             formset.save()
-            # Mark fixture as played
-            fixture.status = Fixture.Status.PLAYED
-            fixture.save(update_fields=["status"])
             messages.success(request, "Result recorded.")
             return redirect("results:list", competition_pk=fixture.competition_id)
     else:
