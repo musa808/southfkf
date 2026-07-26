@@ -20,7 +20,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-CHANGE-ME-before-depl
 
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["fcms-0q0x.onrender.com"]
+ALLOWED_HOSTS = ["fcms-0q0x.onrender.com" ,"localhost", "127.0.0.1"]
 
 # Render sets this automatically for every web service — no manual config needed.
 RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     "seasons",
     "competitions",
     "fixtures",
-    "results",
+    "results.apps.ResultsConfig",  # custom app config to register signals
     "standings",
     "reports",
     "dashboard",
