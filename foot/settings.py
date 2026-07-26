@@ -13,20 +13,36 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- SECURITY ---
 # Locally, falls back to the insecure dev key below. On Render, set SECRET_KEY
 # as an environment variable (the render.yaml blueprint generates one for you).
+# IMPORTANT: if SECRET_KEY isn't pinned as a persistent env var on Render,
+# every restart/redeploy invalidates all existing sessions and CSRF cookies —
+# double check this is set under your Render service's Environment tab.
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-CHANGE-ME-before-deployment")
 
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["fcms-0q0x.onrender.com"]
 
 # Render sets this automatically for every web service — no manual config needed.
 RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
-CSRF_TRUSTED_ORIGINS = []
+# Single source of truth for CSRF_TRUSTED_ORIGINS — previously this was set
+# twice in this file (once here, once again hardcoded near the bottom), with
+# the second definition silently overwriting the first. Only one definition
+# now, always including both the known production domain and whatever
+# RENDER_EXTERNAL_HOSTNAME resolves to for this deploy.
+CSRF_TRUSTED_ORIGINS = ["https://fcms-0q0x.onrender.com"]
 if RENDER_EXTERNAL_HOSTNAME:
-    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
+# Render terminates TLS at its proxy and forwards to the app over plain HTTP
+# internally. Without this, Django can't tell the original request was HTTPS,
+# which affects request.is_secure() and, in turn, secure-cookie and CSRF
+# behavior.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # --- APPLICATIONS ---
 INSTALLED_APPS = [
@@ -134,7 +150,3 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- CRISPY FORMS ---
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-
-CSRF_TRUSTED_ORIGINS=[
-    "https://fcms-0q0x.onrender.com",
-]

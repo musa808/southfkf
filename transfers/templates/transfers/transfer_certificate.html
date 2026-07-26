@@ -8,19 +8,54 @@
   .certificate {
     max-width: 800px;
     margin: 0 auto;
-    border: 3px solid #0b3d91;
-    padding: 40px 50px;
+    border: 3px solid #000;
+    padding: 0 0 40px;
     font-family: Georgia, 'Times New Roman', serif;
     background: #fffef8;
+    position: relative;
+    overflow: hidden;
   }
+
+  /* ── Kenyan flag stripe band across the top ───────────────────────── */
+  .flag-band {
+    height: 22px;
+    display: flex;
+    flex-direction: column;
+  }
+  .flag-band .stripe { flex: 1; }
+  .flag-band .black  { background: #000000; }
+  .flag-band .white  { background: #ffffff; flex: 0.35; }
+  .flag-band .red    { background: #BE1E2D; }
+  .flag-band .green  { background: #006600; }
+
+  .cert-inner { padding: 30px 50px 0; position: relative; z-index: 1; }
+
+  /* ── Watermark crest, repeated behind the content ─────────────────── */
+  .cert-watermark {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.07;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .cert-watermark svg { width: 480px; height: 480px; }
+
   .certificate .letterhead {
     text-align: center;
-    border-bottom: 2px solid #0b3d91;
+    border-bottom: 3px double #BE1E2D;
     padding-bottom: 16px;
     margin-bottom: 24px;
   }
+  .certificate .letterhead .crest-badge {
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 8px;
+  }
   .certificate .letterhead h1 {
-    color: #0b3d91;
+    color: #000;
     font-size: 22px;
     letter-spacing: 1px;
     margin: 0;
@@ -30,12 +65,26 @@
     color: #444;
     font-size: 13px;
   }
+  .certificate .letterhead .flag-strip {
+    display: inline-flex;
+    width: 110px;
+    height: 6px;
+    margin-top: 8px;
+    border: 1px solid #ddd;
+  }
+  .certificate .letterhead .flag-strip span { flex: 1; }
+  .certificate .letterhead .flag-strip .b { background: #000; }
+  .certificate .letterhead .flag-strip .w { background: #fff; flex: 0.4; }
+  .certificate .letterhead .flag-strip .r { background: #BE1E2D; }
+  .certificate .letterhead .flag-strip .g { background: #006600; }
+
   .certificate .cert-title {
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 3px;
     font-size: 18px;
     font-weight: bold;
+    color: #BE1E2D;
     margin: 20px 0;
   }
   .certificate .ref-no {
@@ -60,7 +109,7 @@
   .certificate .details td:first-child {
     font-weight: bold;
     width: 40%;
-    color: #0b3d91;
+    color: #006600;
   }
   .signature-block {
     margin-top: 60px;
@@ -74,11 +123,11 @@
   .signature-block .sig .name-script {
     font-family: 'Dancing Script', cursive;
     font-size: 34px;
-    color: #0b3d91;
+    color: #000;
     line-height: 1;
   }
   .signature-block .sig .line {
-    border-top: 1px solid #333;
+    border-top: 2px solid #BE1E2D;
     margin-top: 6px;
     padding-top: 4px;
     font-size: 13px;
@@ -89,6 +138,17 @@
     text-align: center;
     margin-top: 30px;
   }
+  .cert-footer-band {
+    height: 8px;
+    display: flex;
+    margin-top: 30px;
+  }
+  .cert-footer-band span { flex: 1; }
+  .cert-footer-band .b { background: #000; }
+  .cert-footer-band .w { background: #fff; flex: 0.35; }
+  .cert-footer-band .r { background: #BE1E2D; }
+  .cert-footer-band .g { background: #006600; }
+
   @media print {
     .no-print { display: none; }
     body { background: white; }
@@ -101,55 +161,102 @@
 </div>
 
 <div class="certificate">
-  <div class="ref-no">Certificate No: TC-{{ transfer.pk|stringformat:"05d" }}</div>
 
-  <div class="letterhead">
-    <h1>{{ federation_name }}</h1>
-    <p>{{ subcounty_name }} &middot; Office of the Chairman</p>
-    <p>Player Transfer Certificate</p>
+  <!-- Kenyan flag stripe band -->
+  <div class="flag-band">
+    <div class="stripe black"></div>
+    <div class="stripe white"></div>
+    <div class="stripe red"></div>
+    <div class="stripe white"></div>
+    <div class="stripe green"></div>
   </div>
 
-  <div class="cert-title">Official Transfer Certificate</div>
-
-  <div class="body">
-    <p>
-      This is to certify that the transfer of player
-      <strong>{{ transfer.player.full_name }}</strong>
-      {% if transfer.from_club %}from <strong>{{ transfer.from_club.name }}</strong>{% else %}as a free agent{% endif %}
-      to <strong>{{ transfer.to_club.name }}</strong> has been reviewed and approved
-      in accordance with the {{ subcounty_name }} transfer regulations for the
-      {{ transfer.window.season.name }} season.
-    </p>
+  <!-- Watermark crest -->
+  <div class="cert-watermark">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 4 L90 16 V46 C90 70 73 88 50 96 C27 88 10 70 10 46 V16 Z"
+            fill="#006600" stroke="#000" stroke-width="1"/>
+      <circle cx="50" cy="42" r="20" fill="#fffef8"/>
+      <path d="M50 26 L60 33 L56 45 L44 45 L40 33 Z" fill="#BE1E2D"/>
+      <path d="M50 26 L50 18" stroke="#000" stroke-width="2"/>
+      <path d="M60 33 L67 28" stroke="#000" stroke-width="2"/>
+      <path d="M56 45 L60 53" stroke="#000" stroke-width="2"/>
+      <path d="M44 45 L40 53" stroke="#000" stroke-width="2"/>
+      <path d="M40 33 L33 28" stroke="#000" stroke-width="2"/>
+    </svg>
   </div>
 
-  <table class="details">
-    <tr><td>Player</td><td>{{ transfer.player.full_name }}</td></tr>
-    <tr><td>From Club</td><td>{% if transfer.from_club %}{{ transfer.from_club.name }}{% else %}— (Free Agent)</td>{% endif %}</tr>
-    <tr><td>To Club</td><td>{{ transfer.to_club.name }}</td></tr>
-    <tr><td>Transfer Type</td><td>{{ transfer.get_transfer_type_display }}</td></tr>
-    {% if transfer.fee %}<tr><td>Fee</td><td>KES {{ transfer.fee }}</td></tr>{% endif %}
-    {% if transfer.loan_end_date %}<tr><td>Loan End Date</td><td>{{ transfer.loan_end_date }}</td></tr>{% endif %}
-    <tr><td>Transfer Window</td><td>{{ transfer.window.name }}</td></tr>
-    <tr><td>Approved On</td><td>{{ transfer.subcounty_response_at|date:"d F Y" }}</td></tr>
-  </table>
+  <div class="cert-inner">
+    <div class="ref-no">Certificate No: TC-{{ transfer.pk|stringformat:"05d" }}</div>
 
-  <div class="signature-block">
-    <div class="sig">
-      <div class="name-script">{{ chairman_name }}</div>
-      <div class="line">
-        <strong>{{ chairman_name }}</strong><br>
-        {{ chairman_title }}
+    <div class="letterhead">
+      <svg class="crest-badge" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 4 L90 16 V46 C90 70 73 88 50 96 C27 88 10 70 10 46 V16 Z"
+              fill="#006600" stroke="#000" stroke-width="1.5"/>
+        <circle cx="50" cy="42" r="20" fill="#fffef8" stroke="#BE1E2D" stroke-width="1.5"/>
+        <path d="M50 26 L60 33 L56 45 L44 45 L40 33 Z" fill="#BE1E2D"/>
+        <path d="M50 26 L50 18" stroke="#000" stroke-width="2"/>
+        <path d="M60 33 L67 28" stroke="#000" stroke-width="2"/>
+        <path d="M56 45 L60 53" stroke="#000" stroke-width="2"/>
+        <path d="M44 45 L40 53" stroke="#000" stroke-width="2"/>
+        <path d="M40 33 L33 28" stroke="#000" stroke-width="2"/>
+        <path d="M50 96 C27 88 10 70 10 46" fill="none" stroke="#BE1E2D" stroke-width="1.5"/>
+        <path d="M50 96 C73 88 90 70 90 46" fill="none" stroke="#BE1E2D" stroke-width="1.5"/>
+      </svg>
+      <h1>{{ federation_name }}</h1>
+      <p>{{ subcounty_name }} &middot; Office of the Chairman</p>
+      <p>Player Transfer Certificate</p>
+      <div class="flag-strip">
+        <span class="b"></span><span class="w"></span><span class="r"></span><span class="w"></span><span class="g"></span>
       </div>
     </div>
-    <div class="sig">
-      <div style="height:34px;"></div>
-      <div class="line">Official Stamp</div>
+
+    <div class="cert-title">Official Transfer Certificate</div>
+
+    <div class="body">
+      <p>
+        This is to certify that the transfer of player
+        <strong>{{ transfer.player.full_name }}</strong>
+        {% if transfer.from_club %}from <strong>{{ transfer.from_club.name }}</strong>{% else %}as a free agent{% endif %}
+        to <strong>{{ transfer.to_club.name }}</strong> has been reviewed and approved
+        in accordance with the {{ subcounty_name }} transfer regulations for the
+        {{ transfer.window.season.name }} season.
+      </p>
+    </div>
+
+    <table class="details">
+      <tr><td>Player</td><td>{{ transfer.player.full_name }}</td></tr>
+      <tr><td>From Club</td><td>{% if transfer.from_club %}{{ transfer.from_club.name }}{% else %}— (Free Agent)</td>{% endif %}</tr>
+      <tr><td>To Club</td><td>{{ transfer.to_club.name }}</td></tr>
+      <tr><td>Transfer Type</td><td>{{ transfer.get_transfer_type_display }}</td></tr>
+      {% if transfer.fee %}<tr><td>Fee</td><td>KES {{ transfer.fee }}</td></tr>{% endif %}
+      {% if transfer.loan_end_date %}<tr><td>Loan End Date</td><td>{{ transfer.loan_end_date }}</td></tr>{% endif %}
+      <tr><td>Transfer Window</td><td>{{ transfer.window.name }}</td></tr>
+      <tr><td>Approved On</td><td>{{ transfer.subcounty_response_at|date:"d F Y" }}</td></tr>
+    </table>
+
+    <div class="signature-block">
+      <div class="sig">
+        <div class="name-script">{{ chairman_name }}</div>
+        <div class="line">
+          <strong>{{ chairman_name }}</strong><br>
+          {{ chairman_title }}
+        </div>
+      </div>
+      <div class="sig">
+        <div style="height:34px;"></div>
+        <div class="line">Official Stamp</div>
+      </div>
+    </div>
+
+    <p class="stamp-note">
+      Generated by the {{ subcounty_name }} Football Club Management System on {% now "d F Y" %}.
+      Valid only alongside the digital transfer record (ID {{ transfer.pk }}) in the system.
+    </p>
+
+    <div class="cert-footer-band">
+      <span class="b"></span><span class="w"></span><span class="r"></span><span class="w"></span><span class="g"></span>
     </div>
   </div>
-
-  <p class="stamp-note">
-    Generated by the {{ subcounty_name }} Football Club Management System on {% now "d F Y" %}.
-    Valid only alongside the digital transfer record (ID {{ transfer.pk }}) in the system.
-  </p>
 </div>
 {% endblock %}
