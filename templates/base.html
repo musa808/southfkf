@@ -319,6 +319,13 @@
                         <i class="bi bi-file-earmark-pdf me-2"></i>Reports
                     </a>
                 </li>
+                {% if user.is_superuser %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/" target="_blank">
+                        <i class="bi bi-gear me-2"></i>Django Admin
+                    </a>
+                </li>
+                {% endif %}
             </ul>
         </div>
 
@@ -384,6 +391,13 @@
                         <i class="bi bi-file-earmark-pdf me-2"></i>Reports
                     </a>
                 </li>
+                {% if user.is_superuser %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/" target="_blank">
+                        <i class="bi bi-gear me-2"></i>Django Admin
+                    </a>
+                </li>
+                {% endif %}
             </ul>
             <div class="mt-auto pt-4">
                 <div class="d-flex align-items-center gap-2 mb-2">
