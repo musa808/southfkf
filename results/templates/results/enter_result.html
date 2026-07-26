@@ -15,6 +15,17 @@
 <form method="post">
     {% csrf_token %}
 
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+    {% if formset.non_form_errors %}
+    <div class="alert alert-danger">
+        {{ formset.non_form_errors }}
+    </div>
+    {% endif %}
+
     <div class="card shadow-sm p-4 mb-4">
         <h6 class="mb-3">Score</h6>
         <div class="row g-3">
@@ -63,6 +74,9 @@
         <div id="goal-formset">
             {% for gform in formset %}
             <div class="goal-row border rounded p-3 mb-2">
+                {% if gform.non_field_errors %}
+                <div class="alert alert-danger py-2 small mb-2">{{ gform.non_field_errors }}</div>
+                {% endif %}
                 <div class="row g-2 align-items-end">
                     <div class="col-md-4">{{ gform.scorer|as_crispy_field }}</div>
                     <div class="col-md-3">{{ gform.scorer_name_fallback|as_crispy_field }}</div>
