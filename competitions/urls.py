@@ -14,7 +14,7 @@ urlpatterns = [
     path("<int:pk>/setup-groups/", views.setup_groups, name="setup_groups"),
     path("<int:pk>/setup-knockout-rounds/", views.setup_knockout_rounds, name="setup_knockout_rounds"),
     path("<int:pk>/generate-bracket-slots/", views.generate_bracket_slots_view, name="generate_bracket_slots"),
-path("competition/<int:competition_pk>/bracket/", views.bracket_view, name="bracket"),
-path("bracket-fixture/<int:fixture_pk>/assign/", views.bracket_assign_slot, name="bracket_assign_slot"),
-path("bracket-fixture/<int:fixture_pk>/clear/", views.bracket_clear_slot, name="bracket_clear_slot"),
+    path("competition/<int:competition_pk>/bracket/", views.bracket_view, name="bracket"),
+    path("bracket-fixture/<int:fixture_pk>/assign/", views.bracket_assign_slot, name="bracket_assign_slot"),
+    path("bracket-fixture/<int:fixture_pk>/clear/", views.bracket_clear_slot, name="bracket_clear_slot"),
 ]

@@ -1,9 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db import models as db_models
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
+from fixtures.models import Fixture
+
+from .bracket_generator import generate_bracket_slots
 from .forms import CompetitionForm, TeamEntryForm
-from .models import Competition, CompetitionTeam, Group, KnockoutRound
+from .models import Competition, CompetitionTeam, Group, KnockoutFixture, KnockoutRound
 
 
 def _can_manage(user):
@@ -152,7 +158,7 @@ def setup_knockout_rounds(request, pk):
     """
     Creates the knockout round skeleton chosen by the admin (e.g. just
     Semi Finals + Final for a small competition). Fixture slots within
-    each round, and auto-pairing teams into them, is Phase 3.
+    each round are created separately via generate_bracket_slots_view.
     """
     competition = get_object_or_404(Competition, pk=pk)
     if not competition.has_knockout_bracket:
@@ -183,19 +189,16 @@ def setup_knockout_rounds(request, pk):
         "competitions/setup_knockout_rounds.html",
         {"competition": competition, "round_choices": ROUND_CHOICES},
     )
-from django.db import models as db_models
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-
-from fixtures.models import Fixture
-
-from .bracket_generator import generate_bracket_slots
-from .models import KnockoutFixture  # add to your existing models import
 
 
 @login_required
 @user_passes_test(_can_manage)
 def generate_bracket_slots_view(request, pk):
+    """
+    Creates the empty KnockoutFixture slots for every round already set
+    up via setup_knockout_rounds, and wires feeds_into between rounds.
+    Safe to re-run — only fills gaps for rounds that don't have slots yet.
+    """
     competition = get_object_or_404(Competition, pk=pk)
     if not competition.has_knockout_bracket:
         messages.error(request, "This competition doesn't use a knockout bracket.")
@@ -215,6 +218,12 @@ def generate_bracket_slots_view(request, pk):
 
 @login_required
 def bracket_view(request, competition_pk):
+    """
+    Renders the drag-and-drop knockout bracket: every round as a column,
+    each KnockoutFixture as a two-slot box, and unassigned entered teams
+    as draggable chips. Editing (drag/clear) is gated to admins via
+    can_manage in the template; anyone logged in can view the bracket.
+    """
     competition = get_object_or_404(Competition, pk=competition_pk)
 
     if not competition.has_knockout_bracket:
@@ -230,6 +239,7 @@ def bracket_view(request, competition_pk):
         )
     ).order_by("order")
 
+    # A team is "placed" once it occupies any slot anywhere in the bracket.
     assigned_team_ids = set()
     for rnd in rounds:
         for kf in rnd.fixtures.all():
@@ -258,6 +268,7 @@ def bracket_view(request, competition_pk):
 
 
 def _slot_is_locked(knockout_fixture):
+    """A slot can't be changed once its underlying Fixture has been played."""
     return hasattr(knockout_fixture, "match") and knockout_fixture.match.status == Fixture.Status.PLAYED
 
 
@@ -265,6 +276,7 @@ def _slot_is_locked(knockout_fixture):
 @user_passes_test(_can_manage)
 @require_POST
 def bracket_assign_slot(request, fixture_pk):
+    """AJAX endpoint: drop a team onto a bracket slot."""
     knockout_fixture = get_object_or_404(
         KnockoutFixture.objects.select_related("round__competition"), pk=fixture_pk
     )
@@ -284,6 +296,7 @@ def bracket_assign_slot(request, fixture_pk):
         knockout_fixture.team_b = team
     knockout_fixture.save(update_fields=["team_a", "team_b"])
 
+    # Create/update the underlying Fixture once both slots are filled.
     if knockout_fixture.team_a and knockout_fixture.team_b:
         Fixture.objects.update_or_create(
             knockout_fixture=knockout_fixture,
@@ -293,6 +306,7 @@ def bracket_assign_slot(request, fixture_pk):
                 "away_team": knockout_fixture.team_b,
             },
         )
+
     return JsonResponse({"ok": True})
 
 
@@ -300,6 +314,7 @@ def bracket_assign_slot(request, fixture_pk):
 @user_passes_test(_can_manage)
 @require_POST
 def bracket_clear_slot(request, fixture_pk):
+    """AJAX endpoint: remove a team from a bracket slot."""
     knockout_fixture = get_object_or_404(KnockoutFixture, pk=fixture_pk)
     if _slot_is_locked(knockout_fixture):
         return JsonResponse({"error": "This tie has already been played."}, status=400)
@@ -313,5 +328,8 @@ def bracket_clear_slot(request, fixture_pk):
     else:
         knockout_fixture.team_b = None
     knockout_fixture.save(update_fields=["team_a", "team_b"])
+
+    # No longer a valid fixture without both teams.
     Fixture.objects.filter(knockout_fixture=knockout_fixture).delete()
+
     return JsonResponse({"ok": True})
