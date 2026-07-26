@@ -82,7 +82,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
+WHITENOISE_MANIFEST_STRICT = False  # avoid errors when static files are missing
 ROOT_URLCONF = "foot.urls"
 
 TEMPLATES = [
