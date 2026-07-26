@@ -202,4 +202,16 @@
 
     </div>
 </div>
+
+<!-- Force a fresh page (and fresh CSRF token) if this page is restored from
+     the browser's back-forward cache (bfcache) instead of freshly loaded.
+     Without this, a stale token can cause "CSRF token from POST incorrect"
+     after the app/tab has been idle or backgrounded for a while. -->
+<script>
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+</script>
 {% endblock %}
